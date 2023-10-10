@@ -259,6 +259,10 @@ extension CameraView {
           device.automaticallyEnablesLowLightBoostWhenAvailable = lowLightBoost!.boolValue
         }
       }
+        
+        if (device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance)){
+            device.whiteBalanceMode = .continuousAutoWhiteBalance
+        }
 
       device.unlockForConfiguration()
       ReactLogger.log(level: .info, message: "Device successfully configured!")

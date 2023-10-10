@@ -16,7 +16,7 @@ extension CameraView {
   }
 
   // Orientation of the output connections (photo, video, frame processor)
-  var outputOrientation: UIInterfaceOrientation {
+  var UIOrientation: UIInterfaceOrientation {
     if let userOrientation = orientation as String?,
        let parsedOrientation = try? UIInterfaceOrientation(withString: userOrientation) {
       // user is overriding output orientation
@@ -27,11 +27,43 @@ extension CameraView {
     }
   }
 
-  func updateOrientation() {
+    func startOrientationListener() {
+            // Default to .up if gravity data is not available
+            var orientation: UIInterfaceOrientation = .portrait
+            
+            // Check if device motion data is available
+            if motionManager.isDeviceMotionAvailable {
+                motionManager.deviceMotionUpdateInterval = 0.2
+                // Start receiving device motion updates
+                motionManager.startDeviceMotionUpdates(to: OperationQueue()) { (data, error) in
+
+                    if let gravity = data?.gravity {
+                        if abs(gravity.y) < abs(gravity.x) {
+                            orientation = gravity.x > 0 ? .landscapeLeft : .landscapeRight
+                        } else {
+                            orientation = gravity.y > 0 ? .portraitUpsideDown : .portrait
+                        }
+                    }
+                    
+                    if self.outputOrientation != orientation{
+                        self.outputOrientation = orientation
+                        self.updateOrientation()
+                        print("Physical Orientation: \(orientation.rawValue)")
+                    }
+                }
+            }
+        }
+    
+    func stopOrientationListener() {
+        motionManager.stopDeviceMotionUpdates();
+      }
+    
+    func updateOrientation() {
     // Updates the Orientation for all rotable
     let isMirrored = videoDeviceInput?.device.position == .front
-
+//    self.previewView.videoPreviewLayer.connection?.videoOrientation = .portraitUpsideDown
     let connectionOrientation = outputOrientation
+        self.previewView.videoPreviewLayer.connection?.setInterfaceOrientation(UIOrientation)
     captureSession.outputs.forEach { output in
       output.connections.forEach { connection in
         if connection.isVideoMirroringSupported {

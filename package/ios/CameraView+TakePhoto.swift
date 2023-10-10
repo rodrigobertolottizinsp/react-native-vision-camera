@@ -48,7 +48,8 @@ extension CameraView {
       // shutter sound
       let enableShutterSound = options["enableShutterSound"] as? Bool ?? true
       let filePath = options["filePath"] as? String ?? ""
-      let targetWidth = options["targetWidth"] as? Int ?? 0
+        let targetWidth = options["targetWidth"] as? Int ?? 0
+        let aspectRatio = options["aspectRatio"] as? Double ?? 0
       // depth data
       photoSettings.isDepthDataDeliveryEnabled = photoOutput.isDepthDataDeliveryEnabled
       if #available(iOS 12.0, *) {
@@ -79,7 +80,7 @@ extension CameraView {
         photoSettings.isAutoContentAwareDistortionCorrectionEnabled = enableAutoDistortionCorrection
       }
 
-        photoOutput.capturePhoto(with: photoSettings, delegate: PhotoCaptureDelegate(promise: promise, enableShutterSound: enableShutterSound, filePath: filePath, targetWidth: targetWidth ))
+        photoOutput.capturePhoto(with: photoSettings, delegate: PhotoCaptureDelegate(promise: promise, enableShutterSound: enableShutterSound, filePath: filePath, targetWidth: targetWidth, aspectRatio: aspectRatio ))
 
       // Assume that `takePhoto` is always called with the same parameters, so prepare the next call too.
       photoOutput.setPreparedPhotoSettingsArray([photoSettings], completionHandler: nil)

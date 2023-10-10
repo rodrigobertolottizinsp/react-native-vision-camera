@@ -16,12 +16,14 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
   private let promise: Promise
   private let enableShutterSound: Bool
   private let filePath: String
+    private let aspectRatio: Double
     private let targetWidth: Int
-    required init(promise: Promise, enableShutterSound: Bool, filePath: String, targetWidth: Int) {
+    required init(promise: Promise, enableShutterSound: Bool, filePath: String, targetWidth: Int, aspectRatio: Double) {
     self.promise = promise
     self.enableShutterSound = enableShutterSound
     self.filePath = filePath  
-      self.targetWidth = targetWidth
+    self.aspectRatio = aspectRatio
+    self.targetWidth = targetWidth
     super.init()
     delegatesReferences.append(self)
   }
@@ -35,7 +37,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     
     func resizeImage(image: UIImage, targetWidth: Int) -> UIImage? {
 //        let targetSize = CGSize(width: size, height: size)
-
+        
         let size = image.size
         let aspectRatio = size.width / size.height;
         let newSize = CGSize(width: CGFloat(targetWidth), height: CGFloat(targetWidth)/aspectRatio)
@@ -61,6 +63,36 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
         UIGraphicsEndImageContext()
         
         return newImage
+    }
+    
+    func cropImage(image: UIImage, targetWidth: Int, aspectRatio: Double) -> UIImage? {
+        let targetWidth = image.size.width
+        let targetHeight = targetWidth * aspectRatio
+
+        let newSize = CGSize(width: targetWidth, height: targetHeight)
+
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)
+        let rect: CGRect
+        switch image.imageOrientation {
+        case .up, .upMirrored:
+            rect = CGRect(x: 0, y: (image.size.height - targetHeight) / 2, width: targetWidth, height: targetHeight)
+        case .down, .downMirrored:
+            rect = CGRect(x: 0, y: (image.size.height - targetHeight) / 2, width: targetWidth, height: targetHeight)
+        case .left, .leftMirrored:
+            rect = CGRect(x: 0, y: 0, width: targetHeight, height: targetWidth)
+
+        case .right, .rightMirrored:
+            rect = CGRect(x: 0, y: 0, width: targetHeight, height: targetWidth)
+
+        @unknown default:
+            rect = CGRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+        }
+        image.draw(in: rect)
+
+        let croppedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return croppedImage
     }
 
     func convertToJPEGData(image: UIImage, compressionQuality: CGFloat = 1.0) -> Data? {
@@ -104,15 +136,21 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
             }
             
             // 2. Resize the image
-            guard let resized = resizeImage(image: image, targetWidth: targetWidth ) else {
+            guard let resized = resizeImage(image: image, targetWidth: targetWidth) else {
                 promise.reject(error: .capture(.fileError))
                 return
             }
             
-            // 3. Convert the resized image to JPEG data
+            // 3. Apply aspect ratio
+//            guard let imageWithAspectRatio = cropImage(image: resized, targetWidth: targetWidth, aspectRatio: aspectRatio) else {
+//                promise.reject(error: .capture(.fileError))
+//                return
+//            }
+//            
+            // 4. Convert the resized image to JPEG data
             if let dataResized = convertToJPEGData(image: resized) {
                 
-                // 4. Write the resized image data to the specified URL
+                // 5. Write the resized image data to the specified URL
                 try dataResized.write(to: url)
             } else {
                 promise.reject(error: .capture(.fileError))

@@ -9,6 +9,7 @@
 import AVFoundation
 import Foundation
 import UIKit
+import AVKit
 
 class PreviewView: UIView {
   /**
@@ -16,7 +17,9 @@ class PreviewView: UIView {
    */
   var videoPreviewLayer: AVCaptureVideoPreviewLayer {
     // swiftlint:disable force_cast
-    return layer as! AVCaptureVideoPreviewLayer
+    //TODO zTest: Trying things out. Use videoOrientationAngle for iOS 17
+    let previewLayer = layer as! AVCaptureVideoPreviewLayer
+    return previewLayer
     // swiftlint:enable force_cast
   }
 
@@ -42,6 +45,8 @@ class PreviewView: UIView {
     super.init(frame: frame)
     videoPreviewLayer.session = session
     videoPreviewLayer.videoGravity = .resizeAspectFill
+      //TODO: zTesting
+    videoPreviewLayer.connection?.videoOrientation = .landscapeRight
   }
 
   @available(*, unavailable)

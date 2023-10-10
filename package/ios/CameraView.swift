@@ -9,7 +9,7 @@
 import AVFoundation
 import Foundation
 import UIKit
-
+import CoreMotion
 //
 // TODOs for the CameraView which are currently too hard to implement either because of AVFoundation's limitations, or my brain capacity
 //
@@ -53,6 +53,7 @@ public final class CameraView: UIView {
   @objc var hdr: NSNumber? // nullable bool
   @objc var lowLightBoost: NSNumber? // nullable bool
   @objc var orientation: NSString?
+    @objc var aspectRatio: NSNumber?
   // other props
   @objc var isActive = false
   @objc var torch = "off"
@@ -89,6 +90,8 @@ public final class CameraView: UIView {
   // Inputs & Outputs
   var videoDeviceInput: AVCaptureDeviceInput?
   var audioDeviceInput: AVCaptureDeviceInput?
+    let motionManager = CMMotionManager()
+    var outputOrientation: UIInterfaceOrientation = .portrait
   var photoOutput: AVCapturePhotoOutput?
   var videoOutput: AVCaptureVideoDataOutput?
   var audioOutput: AVCaptureAudioDataOutput?
@@ -117,7 +120,7 @@ public final class CameraView: UIView {
     previewView = PreviewView(frame: frame, session: captureSession)
     super.init(frame: frame)
 
-    addSubview(previewView)
+      addSubview(previewView)
 
     NotificationCenter.default.addObserver(self,
                                            selector: #selector(sessionRuntimeError),
@@ -131,6 +134,7 @@ public final class CameraView: UIView {
                                            selector: #selector(audioSessionInterrupted),
                                            name: AVAudioSession.interruptionNotification,
                                            object: AVAudioSession.sharedInstance)
+    startOrientationListener()
   }
 
   @available(*, unavailable)
@@ -148,6 +152,7 @@ public final class CameraView: UIView {
     NotificationCenter.default.removeObserver(self,
                                               name: AVAudioSession.interruptionNotification,
                                               object: AVAudioSession.sharedInstance)
+    stopOrientationListener()
   }
 
   override public func willMove(toSuperview newSuperview: UIView?) {
@@ -230,8 +235,9 @@ public final class CameraView: UIView {
           }
         }
 
+        
         if shouldUpdateOrientation {
-          self.updateOrientation()
+            self.updateOrientation()
         }
 
         // This is a wack workaround, but if I immediately set torch mode after `startRunning()`, the session isn't quite ready yet and will ignore torch.
