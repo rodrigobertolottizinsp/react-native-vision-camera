@@ -39,8 +39,12 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 //        let targetSize = CGSize(width: size, height: size)
         
         let size = image.size
-        let aspectRatio = size.width / size.height;
-        let newSize = CGSize(width: CGFloat(targetWidth), height: CGFloat(targetWidth)/aspectRatio)
+        var aspectRatio = size.width / size.height;
+        var newSize = CGSize(width: CGFloat(targetWidth), height: CGFloat(targetWidth)/aspectRatio)
+        if (size.width <= size.height){
+            aspectRatio = size.height / size.width;
+            newSize = CGSize(width: CGFloat(targetWidth)/aspectRatio, height: CGFloat(targetWidth))
+        }
         
 //        let widthRatio  = targetSize.width  / size.width
 //        let heightRatio = targetSize.height / size.height
@@ -59,6 +63,30 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
         // Actually do the resizing to the rect using the ImageContext stuff
         UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
         image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage
+    }
+    
+    func resizeImageWithInterpolation(image: UIImage, targetWidth: Int) -> UIImage? {
+        let size = image.size
+        var aspectRatio = size.width / size.height;
+        var newSize = CGSize(width: CGFloat(targetWidth), height: CGFloat(targetWidth)/aspectRatio)
+        if (size.width <= size.height){
+            aspectRatio = size.height / size.width;
+            newSize = CGSize(width: CGFloat(targetWidth)/aspectRatio, height: CGFloat(targetWidth))
+        }
+        
+        //TODO: Test with 0.0
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0) // Use 0.0 for scale to automatically choose the appropriate scale.
+        
+        // Use interpolation when drawing the image to improve quality.
+        let context = UIGraphicsGetCurrentContext()
+        context?.interpolationQuality = .high
+        
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
@@ -95,9 +123,9 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
         return croppedImage
     }
 
-    func convertToJPEGData(image: UIImage, compressionQuality: CGFloat = 1.0) -> Data? {
-        return image.jpegData(compressionQuality: compressionQuality)
-    }
+//    func convertToJPEGData(image: UIImage, compressionQuality: CGFloat = 0.9) -> Data? {
+//        return image.jpegData(compressionQuality: compressionQuality)
+//    }
 
     func photoOutput(_: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         defer {
@@ -126,7 +154,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
             promise.reject(error: .capture(.fileError))
             return
         }
-              
+    
     do {         
         if (targetWidth > 0){
             // 1. Check if data can be converted to UIImage
@@ -136,7 +164,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
             }
             
             // 2. Resize the image
-            guard let resized = resizeImage(image: image, targetWidth: targetWidth) else {
+            guard let resized = resizeImageWithInterpolation(image: image, targetWidth: targetWidth) else {
                 promise.reject(error: .capture(.fileError))
                 return
             }
@@ -148,7 +176,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
 //            }
 //            
             // 4. Convert the resized image to JPEG data
-            if let dataResized = convertToJPEGData(image: resized) {
+            if let dataResized = resized.jpegData(compressionQuality: 0.9) {
                 
                 // 5. Write the resized image data to the specified URL
                 try dataResized.write(to: url)

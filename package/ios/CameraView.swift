@@ -225,6 +225,8 @@ public final class CameraView: UIView {
 
         if shouldCheckActive && self.captureSession.isRunning != self.isActive {
           if self.isActive {
+            self.stopOrientationListener()
+            self.startOrientationListener()
             ReactLogger.log(level: .info, message: "Starting Session...")
             self.captureSession.startRunning()
             ReactLogger.log(level: .info, message: "Started Session!")
@@ -232,6 +234,7 @@ public final class CameraView: UIView {
             ReactLogger.log(level: .info, message: "Stopping Session...")
             self.captureSession.stopRunning()
             ReactLogger.log(level: .info, message: "Stopped Session!")
+            self.stopOrientationListener()
           }
         }
 
