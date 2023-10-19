@@ -25,19 +25,19 @@ RCT_EXTERN__BLOCKING_SYNCHRONOUS_METHOD(installFrameProcessorBindings);
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(cameraId, NSString);
 RCT_EXPORT_VIEW_PROPERTY(enableDepthData, BOOL);
-RCT_EXPORT_VIEW_PROPERTY(enableHighQualityPhotos, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(enableHighQualityPhotos, NSNumber); // nullable bool
 RCT_EXPORT_VIEW_PROPERTY(enablePortraitEffectsMatteDelivery, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(enableBufferCompression, BOOL);
 // use cases
-RCT_EXPORT_VIEW_PROPERTY(photo, BOOL);
-RCT_EXPORT_VIEW_PROPERTY(video, BOOL);
-RCT_EXPORT_VIEW_PROPERTY(audio, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(photo, NSNumber); // nullable bool
+RCT_EXPORT_VIEW_PROPERTY(video, NSNumber); // nullable bool
+RCT_EXPORT_VIEW_PROPERTY(audio, NSNumber); // nullable bool
 RCT_EXPORT_VIEW_PROPERTY(enableFrameProcessor, BOOL);
 // device format
 RCT_EXPORT_VIEW_PROPERTY(format, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(fps, NSNumber);
-RCT_EXPORT_VIEW_PROPERTY(hdr, BOOL);
-RCT_EXPORT_VIEW_PROPERTY(lowLightBoost, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(hdr, NSNumber);           // nullable bool
+RCT_EXPORT_VIEW_PROPERTY(lowLightBoost, NSNumber); // nullable bool
 RCT_EXPORT_VIEW_PROPERTY(videoStabilizationMode, NSString);
 RCT_EXPORT_VIEW_PROPERTY(pixelFormat, NSString);
 // other props
@@ -51,9 +51,8 @@ RCT_EXPORT_VIEW_PROPERTY(resizeMode, NSString);
 RCT_EXPORT_VIEW_PROPERTY(onError, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onInitialized, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(onViewReady, RCTDirectEventBlock);
-// Code Scanner
-RCT_EXPORT_VIEW_PROPERTY(codeScannerOptions, NSDictionary);
-RCT_EXPORT_VIEW_PROPERTY(onCodeScanned, RCTDirectEventBlock);
+//zTesting zoom
+RCT_EXPORT_VIEW_PROPERTY(onZoomChanged, RCTDirectEventBlock);
 
 // Camera View Functions
 RCT_EXTERN_METHOD(startRecording
@@ -79,5 +78,4 @@ RCT_EXTERN_METHOD(focus
                   : (NSDictionary*)point resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject);
-
 @end

@@ -9,38 +9,51 @@
 import AVFoundation
 import Foundation
 import UIKit
-
+import CoreMotion
+//
 // TODOs for the CameraView which are currently too hard to implement either because of AVFoundation's limitations, or my brain capacity
 //
 // CameraView+RecordVideo
 // TODO: Better startRecording()/stopRecording() (promise + callback, wait for TurboModules/JSI)
-//
+
 // CameraView+TakePhoto
 // TODO: Photo HDR
 
+private let propsThatRequireReconfiguration = ["cameraId",
+                                               "enableDepthData",
+                                               "enableHighQualityPhotos",
+                                               "enablePortraitEffectsMatteDelivery",
+                                               "photo",
+                                               "video",
+                                               "enableFrameProcessor",
+                                               "hdr",
+                                               "pixelFormat"]
+private let propsThatRequireDeviceReconfiguration = ["fps",
+                                                     "lowLightBoost"]
+
 // MARK: - CameraView
 
-public final class CameraView: UIView, CameraSessionDelegate {
+public final class CameraView: UIView {
   // pragma MARK: React Properties
   // props that require reconfiguring
   @objc var cameraId: NSString?
   @objc var enableDepthData = false
-  @objc var enableHighQualityPhotos = false
+  @objc var enableHighQualityPhotos: NSNumber? // nullable bool
   @objc var enablePortraitEffectsMatteDelivery = false
   @objc var enableBufferCompression = false
   // use cases
-  @objc var photo = false
-  @objc var video = false
-  @objc var audio = false
+  @objc var photo: NSNumber? // nullable bool
+  @objc var video: NSNumber? // nullable bool
+  @objc var audio: NSNumber? // nullable bool
   @objc var enableFrameProcessor = false
-  @objc var codeScannerOptions: NSDictionary?
   @objc var pixelFormat: NSString?
   // props that require format reconfiguring
   @objc var format: NSDictionary?
   @objc var fps: NSNumber?
-  @objc var hdr = false
-  @objc var lowLightBoost = false
+  @objc var hdr: NSNumber? // nullable bool
+  @objc var lowLightBoost: NSNumber? // nullable bool
   @objc var orientation: NSString?
+    @objc var aspectRatio: NSNumber?
   // other props
   @objc var isActive = false
   @objc var torch = "off"
@@ -49,8 +62,7 @@ public final class CameraView: UIView, CameraSessionDelegate {
   @objc var videoStabilizationMode: NSString?
   @objc var resizeMode: NSString = "cover" {
     didSet {
-      let parsed = try? ResizeMode(jsValue: resizeMode as String)
-      previewView.resizeMode = parsed ?? .cover
+      previewView.resizeMode = ResizeMode(fromTypeScriptUnion: resizeMode as String)
     }
   }
 
@@ -58,7 +70,8 @@ public final class CameraView: UIView, CameraSessionDelegate {
   @objc var onInitialized: RCTDirectEventBlock?
   @objc var onError: RCTDirectEventBlock?
   @objc var onViewReady: RCTDirectEventBlock?
-  @objc var onCodeScanned: RCTDirectEventBlock?
+// ztesting
+    @objc var onZoomChanged: RCTDirectEventBlock?
   // zoom
   @objc var enableZoomGesture = false {
     didSet {
@@ -71,9 +84,22 @@ public final class CameraView: UIView, CameraSessionDelegate {
   }
 
   // pragma MARK: Internal Properties
-  var cameraSession: CameraSession
   var isMounted = false
   var isReady = false
+  // Capture Session
+  let captureSession = AVCaptureSession()
+  let audioCaptureSession = AVCaptureSession()
+  // Inputs & Outputs
+  var videoDeviceInput: AVCaptureDeviceInput?
+  var audioDeviceInput: AVCaptureDeviceInput?
+    let motionManager = CMMotionManager()
+    var outputOrientation: UIInterfaceOrientation = .portrait
+  var photoOutput: AVCapturePhotoOutput?
+  var videoOutput: AVCaptureVideoDataOutput?
+  var audioOutput: AVCaptureAudioDataOutput?
+  // CameraView+RecordView (+ Frame Processor)
+  var isRecording = false
+  var recordingSession: RecordingSession?
   #if VISION_CAMERA_ENABLE_FRAME_PROCESSORS
     @objc public var frameProcessor: FrameProcessor?
   #endif
@@ -86,16 +112,31 @@ public final class CameraView: UIView, CameraSessionDelegate {
     var fpsGraph: RCTFPSGraph?
   #endif
 
+  /// Returns whether the AVCaptureSession is currently running (reflected by isActive)
+  var isRunning: Bool {
+    return captureSession.isRunning
+  }
+
   // pragma MARK: Setup
-
   override public init(frame: CGRect) {
-    // Create CameraSession
-    cameraSession = CameraSession()
-    previewView = cameraSession.createPreviewView(frame: frame)
+    previewView = PreviewView(frame: frame, session: captureSession)
     super.init(frame: frame)
-    cameraSession.delegate = self
 
-    addSubview(previewView)
+      addSubview(previewView)
+
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(sessionRuntimeError),
+                                           name: .AVCaptureSessionRuntimeError,
+                                           object: captureSession)
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(sessionRuntimeError),
+                                           name: .AVCaptureSessionRuntimeError,
+                                           object: audioCaptureSession)
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(audioSessionInterrupted),
+                                           name: AVAudioSession.interruptionNotification,
+                                           object: AVAudioSession.sharedInstance)
+    startOrientationListener()
   }
 
   @available(*, unavailable)
@@ -103,6 +144,19 @@ public final class CameraView: UIView, CameraSessionDelegate {
     fatalError("init(coder:) is not implemented.")
   }
 
+  deinit {
+    NotificationCenter.default.removeObserver(self,
+                                              name: .AVCaptureSessionRuntimeError,
+                                              object: captureSession)
+    NotificationCenter.default.removeObserver(self,
+                                              name: .AVCaptureSessionRuntimeError,
+                                              object: audioCaptureSession)
+    NotificationCenter.default.removeObserver(self,
+                                              name: AVAudioSession.interruptionNotification,
+                                              object: AVAudioSession.sharedInstance)
+    stopOrientationListener()
+  }
+    
   override public func willMove(toSuperview newSuperview: UIView?) {
     super.willMove(toSuperview: newSuperview)
 
@@ -119,109 +173,91 @@ public final class CameraView: UIView, CameraSessionDelegate {
     previewView.bounds = bounds
   }
 
-  func getPixelFormat() -> PixelFormat {
-    // TODO: Use ObjC RCT enum parser for this
-    if let pixelFormat = pixelFormat as? String {
-      do {
-        return try PixelFormat(jsValue: pixelFormat)
-      } catch {
-        if let error = error as? CameraError {
-          onError(error)
-        } else {
-          onError(.unknown(message: error.localizedDescription, cause: error as NSError))
-        }
-      }
-    }
-    return .native
-  }
-
-  func getTorch() -> Torch {
-    // TODO: Use ObjC RCT enum parser for this
-    if let torch = try? Torch(jsValue: torch) {
-      return torch
-    }
-    return .off
-  }
-
   // pragma MARK: Props updating
   override public final func didSetProps(_ changedProps: [String]!) {
-    ReactLogger.log(level: .info, message: "Updating \(changedProps.count) props: [\(changedProps.joined(separator: ", "))]")
+    ReactLogger.log(level: .info, message: "Updating \(changedProps.count) prop(s)...")
+    let shouldReconfigure = changedProps.contains { propsThatRequireReconfiguration.contains($0) }
+    let shouldReconfigureFormat = shouldReconfigure || changedProps.contains("format")
+    let shouldReconfigureDevice = shouldReconfigureFormat || changedProps.contains { propsThatRequireDeviceReconfiguration.contains($0) }
+    let shouldReconfigureAudioSession = changedProps.contains("audio")
 
-    cameraSession.configure { config in
-      // Input Camera Device
-      config.cameraId = cameraId as? String
+    let willReconfigure = shouldReconfigure || shouldReconfigureFormat || shouldReconfigureDevice
 
-      // Photo
-      if photo {
-        config.photo = .enabled(config: CameraConfiguration.Photo(enableHighQualityPhotos: enableHighQualityPhotos,
-                                                                  enableDepthData: enableDepthData,
-                                                                  enablePortraitEffectsMatte: enablePortraitEffectsMatteDelivery))
-      } else {
-        config.photo = .disabled
-      }
+    let shouldCheckActive = willReconfigure || changedProps.contains("isActive") || captureSession.isRunning != isActive
+    let shouldUpdateTorch = willReconfigure || changedProps.contains("torch") || shouldCheckActive
+    let shouldUpdateZoom = willReconfigure || changedProps.contains("zoom") || shouldCheckActive
+    let shouldUpdateVideoStabilization = willReconfigure || changedProps.contains("videoStabilizationMode")
+    let shouldUpdateOrientation = willReconfigure || changedProps.contains("orientation")
 
-      // Video/Frame Processor
-      if video || enableFrameProcessor {
-        config.video = .enabled(config: CameraConfiguration.Video(pixelFormat: getPixelFormat(),
-                                                                  enableBufferCompression: enableBufferCompression,
-                                                                  enableHdr: hdr,
-                                                                  enableFrameProcessor: enableFrameProcessor))
-      } else {
-        config.video = .disabled
-      }
-
-      // Audio
-      if audio {
-        config.audio = .enabled(config: CameraConfiguration.Audio())
-      } else {
-        config.audio = .disabled
-      }
-
-      // Code Scanner
-      if let codeScannerOptions {
-        let options = try CodeScannerOptions(fromJsValue: codeScannerOptions)
-        config.codeScanner = .enabled(config: CameraConfiguration.CodeScanner(options: options))
-      } else {
-        config.codeScanner = .disabled
-      }
-
-      // Orientation
-      if let jsOrientation = orientation as? String {
-        let orientation = try Orientation(jsValue: jsOrientation)
-        config.orientation = orientation
-      } else {
-        config.orientation = .portrait
-      }
-
-      // Format
-      if let jsFormat = format {
-        let format = try CameraDeviceFormat(jsValue: jsFormat)
-        config.format = format
-      } else {
-        config.format = nil
-      }
-
-      // Side-Props
-      config.fps = fps?.int32Value
-      config.enableLowLightBoost = lowLightBoost
-      config.torch = getTorch()
-
-      // Zoom
-      config.zoom = zoom.doubleValue
-
-      // isActive
-      config.isActive = isActive
-    }
-
-    // Store `zoom` offset for native pinch-gesture
-    if changedProps.contains("zoom") {
-      pinchScaleOffset = zoom.doubleValue
-    }
-
-    // Set up Debug FPS Graph
     if changedProps.contains("enableFpsGraph") {
       DispatchQueue.main.async {
         self.setupFpsGraph()
+      }
+    }
+
+    if shouldReconfigure ||
+      shouldReconfigureAudioSession ||
+      shouldCheckActive ||
+      shouldUpdateTorch ||
+      shouldUpdateZoom ||
+      shouldReconfigureFormat ||
+      shouldReconfigureDevice ||
+      shouldUpdateVideoStabilization ||
+      shouldUpdateOrientation {
+      CameraQueues.cameraQueue.async {
+        // Video Configuration
+        if shouldReconfigure {
+          self.configureCaptureSession()
+        }
+        if shouldReconfigureFormat {
+          self.configureFormat()
+        }
+        if shouldReconfigureDevice {
+          self.configureDevice()
+        }
+        if shouldUpdateVideoStabilization, let videoStabilizationMode = self.videoStabilizationMode as String? {
+          self.captureSession.setVideoStabilizationMode(videoStabilizationMode)
+        }
+
+        if shouldUpdateZoom {
+          let zoomClamped = max(min(CGFloat(self.zoom.doubleValue), self.maxAvailableZoom), self.minAvailableZoom)
+          self.zoom(factor: zoomClamped, animated: false)
+          self.pinchScaleOffset = zoomClamped
+        }
+
+        if shouldCheckActive && self.captureSession.isRunning != self.isActive {
+          if self.isActive {
+            self.stopOrientationListener()
+            self.startOrientationListener()
+            ReactLogger.log(level: .info, message: "Starting Session...")
+            self.captureSession.startRunning()
+            ReactLogger.log(level: .info, message: "Started Session!")
+          } else {
+            ReactLogger.log(level: .info, message: "Stopping Session...")
+            self.captureSession.stopRunning()
+            ReactLogger.log(level: .info, message: "Stopped Session!")
+            self.stopOrientationListener()
+          }
+        }
+
+        
+        if shouldUpdateOrientation {
+            self.updateOrientation()
+        }
+
+        // This is a wack workaround, but if I immediately set torch mode after `startRunning()`, the session isn't quite ready yet and will ignore torch.
+        if shouldUpdateTorch {
+          CameraQueues.cameraQueue.asyncAfter(deadline: .now() + 0.1) {
+            self.setTorchMode(self.torch)
+          }
+        }
+      }
+
+      // Audio Configuration
+      if shouldReconfigureAudioSession {
+        CameraQueues.audioQueue.async {
+          self.configureAudioSession()
+        }
       }
     }
   }
@@ -241,16 +277,12 @@ public final class CameraView: UIView, CameraSessionDelegate {
   }
 
   // pragma MARK: Event Invokers
-
-  func onError(_ error: CameraError) {
+  final func invokeOnError(_ error: CameraError, cause: NSError? = nil) {
     ReactLogger.log(level: .error, message: "Invoking onError(): \(error.message)")
-    guard let onError = onError else {
-      return
-    }
+    guard let onError = onError else { return }
 
     var causeDictionary: [String: Any]?
-    if case let .unknown(_, cause) = error,
-       let cause = cause {
+    if let cause = cause {
       causeDictionary = [
         "code": cause.code,
         "domain": cause.domain,
@@ -265,60 +297,9 @@ public final class CameraView: UIView, CameraSessionDelegate {
     ])
   }
 
-  func onSessionInitialized() {
+  final func invokeOnInitialized() {
     ReactLogger.log(level: .info, message: "Camera initialized!")
-    guard let onInitialized = onInitialized else {
-      return
-    }
+    guard let onInitialized = onInitialized else { return }
     onInitialized([String: Any]())
-  }
-
-  func onFrame(sampleBuffer: CMSampleBuffer) {
-    #if VISION_CAMERA_ENABLE_FRAME_PROCESSORS
-      if let frameProcessor = frameProcessor {
-        // Call Frame Processor
-        let frame = Frame(buffer: sampleBuffer, orientation: bufferOrientation)
-        frameProcessor.call(frame)
-      }
-    #endif
-
-    #if DEBUG
-      if let fpsGraph {
-        DispatchQueue.main.async {
-          fpsGraph.onTick(CACurrentMediaTime())
-        }
-      }
-    #endif
-  }
-
-  func onCodeScanned(codes: [CameraSession.Code]) {
-    guard let onCodeScanned = onCodeScanned else {
-      return
-    }
-    onCodeScanned([
-      "codes": codes.map { $0.toJSValue() },
-    ])
-  }
-
-  /**
-   Gets the orientation of the CameraView's images (CMSampleBuffers).
-   */
-  private var bufferOrientation: UIImage.Orientation {
-    guard let cameraPosition = cameraSession.videoDeviceInput?.device.position else {
-      return .up
-    }
-    let orientation = cameraSession.configuration?.orientation ?? .portrait
-
-    // TODO: I think this is wrong.
-    switch orientation {
-    case .portrait:
-      return cameraPosition == .front ? .leftMirrored : .right
-    case .landscapeLeft:
-      return cameraPosition == .front ? .downMirrored : .up
-    case .portraitUpsideDown:
-      return cameraPosition == .front ? .rightMirrored : .left
-    case .landscapeRight:
-      return cameraPosition == .front ? .upMirrored : .down
-    }
   }
 }

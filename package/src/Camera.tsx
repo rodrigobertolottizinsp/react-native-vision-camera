@@ -25,7 +25,7 @@ interface OnErrorEvent {
   message: string
   cause?: ErrorWithCause
 }
-type NativeCameraViewProps = Omit<CameraProps, 'device' | 'onInitialized' | 'onError' | 'frameProcessor' | 'codeScanner'> & {
+type NativeCameraViewProps = Omit<CameraProps, 'device' | 'onInitialized' | 'onError' | 'frameProcessor' | 'codeScanner' | 'onZoomChanged'> & {
   cameraId: string
   enableFrameProcessor: boolean
   codeScannerOptions?: Omit<CodeScanner, 'onCodeScanned'>
@@ -33,6 +33,7 @@ type NativeCameraViewProps = Omit<CameraProps, 'device' | 'onInitialized' | 'onE
   onError?: (event: NativeSyntheticEvent<OnErrorEvent>) => void
   onCodeScanned?: (event: NativeSyntheticEvent<OnCodeScannedEvent>) => void
   onViewReady: () => void
+  onZoomChanged?: (event: NativeSyntheticEvent<{zoomFactor: number}>) => void 
 }
 type RefType = React.Component<NativeCameraViewProps> & Readonly<NativeMethods>
 //#endregion
@@ -83,6 +84,7 @@ export class Camera extends React.PureComponent<CameraProps> {
     this.onInitialized = this.onInitialized.bind(this)
     this.onError = this.onError.bind(this)
     this.onCodeScanned = this.onCodeScanned.bind(this)
+    this.onZoomChanged = this.onZoomChanged.bind(this);
     this.ref = React.createRef<RefType>()
     this.lastFrameProcessor = undefined
   }
@@ -401,6 +403,10 @@ export class Camera extends React.PureComponent<CameraProps> {
     codeScanner.onCodeScanned(event.nativeEvent.codes)
   }
 
+  private onZoomChanged(event: NativeSyntheticEvent<number>): void {
+    this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
+  }
+  
   //#region Lifecycle
   private setFrameProcessor(frameProcessor: FrameProcessor): void {
     VisionCameraProxy.setFrameProcessor(this.handle, frameProcessor)
@@ -456,6 +462,7 @@ export class Camera extends React.PureComponent<CameraProps> {
         onInitialized={this.onInitialized}
         onCodeScanned={this.onCodeScanned}
         onError={this.onError}
+        onZoomChanged={this.onZoomChanged}
         codeScannerOptions={codeScanner}
         enableFrameProcessor={frameProcessor != null}
         enableBufferCompression={props.enableBufferCompression ?? shouldEnableBufferCompression}

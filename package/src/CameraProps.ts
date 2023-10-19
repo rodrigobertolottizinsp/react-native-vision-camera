@@ -229,6 +229,10 @@ export interface CameraProps extends ViewProps {
    * Called when the camera was successfully initialized.
    */
   onInitialized?: () => void
+          /**
+   * Hears to zoom value change
+   */
+           onZoomChanged: (number) => void
   /**
    * A worklet which will be called for every frame the Camera "sees".
    *

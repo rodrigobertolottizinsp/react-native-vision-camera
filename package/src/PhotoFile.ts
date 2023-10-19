@@ -44,6 +44,18 @@ export interface TakePhotoOptions {
    * @default true
    */
   enableShutterSound?: boolean
+  /**
+   * Default path to save the file
+   *
+   * 
+   */
+  filePath?: String;
+  /**
+ * Image size
+ *
+ * 
+ */
+  targetWidth?: String
 }
 
 /**

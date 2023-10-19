@@ -7,20 +7,37 @@
 //
 
 import Foundation
-import UIKit
 
 extension CameraView {
+  var minAvailableZoom: CGFloat {
+    return videoDeviceInput?.device.minAvailableVideoZoomFactor ?? 1
+  }
+
+  var maxAvailableZoom: CGFloat {
+    return videoDeviceInput?.device.activeFormat.videoMaxZoomFactor ?? 1
+  }
+
   @objc
   final func onPinch(_ gesture: UIPinchGestureRecognizer) {
-    let scale = max(min(gesture.scale * pinchScaleOffset, cameraSession.maxZoom), CGFloat(1.0))
+    guard let device = videoDeviceInput?.device else {
+      return
+    }
+
+    let scale = max(min(gesture.scale * pinchScaleOffset, device.activeFormat.videoMaxZoomFactor), CGFloat(1.0))
     if gesture.state == .ended {
       pinchScaleOffset = scale
       return
     }
 
-    // Update zoom on Camera
-    cameraSession.configure { configuration in
-      configuration.zoom = scale
+    do {
+      try device.lockForConfiguration()
+      device.videoZoomFactor = scale
+      device.unlockForConfiguration()
+        onZoomChanged?([
+            "zoomFactor": scale
+        ])
+    } catch {
+      invokeOnError(.device(.configureError))
     }
   }
 
@@ -34,6 +51,31 @@ extension CameraView {
     if let pinchGestureRecognizer = pinchGestureRecognizer {
       removeGestureRecognizer(pinchGestureRecognizer)
       self.pinchGestureRecognizer = nil
+    }
+  }
+
+  @objc
+  final func zoom(factor: CGFloat, animated: Bool) {
+    guard let device = videoDeviceInput?.device else {
+      return
+    }
+
+    do {
+      try device.lockForConfiguration()
+      let clamped = max(min(factor, device.activeFormat.videoMaxZoomFactor), CGFloat(1.0))
+      if animated {
+        device.ramp(toVideoZoomFactor: clamped, withRate: 1)
+      } else {
+        device.videoZoomFactor = clamped
+      }
+      device.unlockForConfiguration()
+        
+        //zTesting
+        onZoomChanged?([
+            "zoomFactor": clamped
+        ])
+    } catch {
+      invokeOnError(.device(.configureError))
     }
   }
 }
