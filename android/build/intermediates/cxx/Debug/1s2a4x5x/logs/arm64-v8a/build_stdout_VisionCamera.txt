@@ -1,0 +1,2 @@
+ninja: Entering directory `/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/.cxx/Debug/1s2a4x5x/arm64-v8a'
+ninja: no work to do.
