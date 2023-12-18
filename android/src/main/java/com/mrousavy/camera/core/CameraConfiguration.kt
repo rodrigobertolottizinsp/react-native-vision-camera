@@ -76,10 +76,11 @@ data class CameraConfiguration(
     // Outputs & Session (Photo, Video, CodeScanner, HDR, Format)
     val outputsChanged: Boolean,
     // Side-Props for CaptureRequest (fps, low-light-boost, torch, zoom, videoStabilization)
-    val sidePropsChanged: Boolean
+    val sidePropsChanged: Boolean,
+    val orientationChanged: Boolean
   ) {
     val hasAnyDifference: Boolean
-      get() = sidePropsChanged || outputsChanged || deviceChanged
+      get() = sidePropsChanged || outputsChanged || deviceChanged || orientationChanged
   }
 
   companion object {
@@ -98,15 +99,13 @@ data class CameraConfiguration(
         left.zoom != right.zoom || left.videoStabilizationMode != right.videoStabilizationMode || left.isActive != right.isActive ||
         left.exposure != right.exposure
 
-//      val orientationChanged = left?.orientation != right?.orientation
-//      if (orientationChanged){
-//        print("orientation changed")
-//      }
+      val orientationChanged = left?.orientation != right?.orientation
 
       return Difference(
         deviceChanged,
         outputsChanged,
-        sidePropsChanged
+        sidePropsChanged,
+        orientationChanged
       )
     }
   }

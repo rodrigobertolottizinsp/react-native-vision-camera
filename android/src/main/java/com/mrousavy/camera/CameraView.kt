@@ -219,6 +219,8 @@ class CameraView(context: Context) :
           override fun onScale(detector: ScaleGestureDetector): Boolean {
             zoom *= detector.scaleFactor
             update()
+            onZoomChanged(zoom.toDouble())
+            println("zoom value"+ zoom)
             return true
           }
         }
@@ -241,5 +243,10 @@ class CameraView(context: Context) :
 
   override fun onCodeScanned(codes: List<Barcode>, scannerFrame: CodeScannerFrame) {
     invokeOnCodeScanned(codes, scannerFrame)
+  }
+
+  override fun onZoomChanged(zoom: Double){
+    println("INVOKING ONZOOM CHANGED" +  zoom)
+    invokeOnZoomChanged(zoom)
   }
 }

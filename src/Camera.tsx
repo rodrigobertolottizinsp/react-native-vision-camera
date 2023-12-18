@@ -29,6 +29,7 @@ interface OnErrorEvent {
 type NativeCameraViewProps = Omit<CameraProps, 'device' | 'onInitialized' | 'onError' | 'frameProcessor' | 'onZoomChanged' | 'codeScanner'> & {
   cameraId: string
   enableFrameProcessor: boolean
+  videoMode: boolean
   codeScannerOptions?: Omit<CodeScanner, 'onCodeScanned'>
   onInitialized?: (event: NativeSyntheticEvent<void>) => void
   onError?: (event: NativeSyntheticEvent<OnErrorEvent>) => void
@@ -409,6 +410,7 @@ export class Camera extends React.PureComponent<CameraProps> {
   }
 
   private onZoomChanged(event: NativeSyntheticEvent<number>): void {
+    console.log("Event in javascript: ", event.nativeEvent)
     this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
   }
 
@@ -457,7 +459,6 @@ export class Camera extends React.PureComponent<CameraProps> {
     }
 
     const shouldEnableBufferCompression = props.video === true && frameProcessor == null
-
     return (
       <NativeCameraView
         {...props}

@@ -28,5 +28,6 @@ protocol CameraSessionDelegate: AnyObject {
   /**
    Called whenever a QR/Barcode has been scanned. Only if the CodeScanner Output is enabled
    */
-  func onCodeScanned(codes: [CameraSession.Code], scannerFrame: CameraSession.CodeScannerFrame)
+  func onCodeScanned(codes: [CameraSession.Code], scannerFrame: 
+  CameraSession.CodeScannerFrame)
 }

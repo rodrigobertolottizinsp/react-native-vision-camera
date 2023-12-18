@@ -300,6 +300,7 @@ extension CameraSession {
     device.setExposureTargetBias(clamped)
   }
 
+
   // pragma MARK: Audio
 
   /**

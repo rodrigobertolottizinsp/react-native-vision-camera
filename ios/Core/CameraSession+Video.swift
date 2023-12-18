@@ -124,6 +124,7 @@ extension CameraSession {
         }else if (options.orientation == "landscape-right"){
             videoOrientation = .landscapeRight
         }
+        
       // Init Video
       guard var videoSettings = self.recommendedVideoSettings(videoOutput: videoOutput,
                                                               fileType: options.fileType,
@@ -151,7 +152,7 @@ extension CameraSession {
       let pixelFormat = videoOutput.pixelFormat
 //         videoOutput.setOrientation(.landscapeLeft)
       recordingSession.initializeVideoWriter(withSettings: videoSettings,
-                                             pixelFormat: pixelFormat )
+                                             pixelFormat: pixelFormat)
 
       // Enable/Activate Audio Session (optional)
       if enableAudio {

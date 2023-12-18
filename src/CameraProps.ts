@@ -239,6 +239,7 @@ export interface CameraProps extends ViewProps {
    * Represents the orientation of all Camera Outputs (Photo, Video, and Frame Processor). If this value is not set, the device orientation is used.
    */
   orientation?: Orientation
+  videoMode: boolean
 
   //#region Events
   /**

@@ -214,6 +214,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
                     try dataResized.write(to: url)
                 }
             }
+        
       let exif = photo.metadata["{Exif}"] as? [String: Any]
       let width = exif?["PixelXDimension"]
       let height = exif?["PixelYDimension"]
@@ -221,6 +222,15 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
       let cgOrientation = CGImagePropertyOrientation(rawValue: exifOrientation) ?? CGImagePropertyOrientation.up
       let orientation = getOrientation(forExifOrientation: cgOrientation)
       let isMirrored = getIsMirrored(forExifOrientation: cgOrientation)
+        let exifMetadata = photo.metadata["{Exif}"] as? [String: Any] ?? [:]
+        let tiffMetadata = photo.metadata["{TIFF}"] as? [String: Any] ?? [:]
+
+        // Merge Exif and TIFF metadata into the existing metadata
+        let mergedMetadata = photo.metadata
+            .merging(exifMetadata) { (_, new) in new }
+            .merging(tiffMetadata) { (_, new) in new }
+
+
       promise.resolve([
         "path": filePath,
         "width": width as Any,
@@ -228,7 +238,7 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
         "orientation": orientation,
         "isMirrored": isMirrored,
         "isRawPhoto": photo.isRawPhoto,
-        "metadata": photo.metadata,
+        "metadata": mergedMetadata,
         "thumbnail": photo.embeddedThumbnailPhotoFormat as Any,
       ])
     } catch {

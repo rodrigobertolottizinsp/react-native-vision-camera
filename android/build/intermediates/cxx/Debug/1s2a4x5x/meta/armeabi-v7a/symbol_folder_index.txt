@@ -1,1 +1,0 @@
-/Users/rodrigobertolotti/zInspector/mobileRN/zinspector3/node_modules/react-native-vision-camera/android/build/intermediates/cxx/Debug/1s2a4x5x/obj/armeabi-v7a

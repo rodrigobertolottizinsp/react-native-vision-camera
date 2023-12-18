@@ -87,19 +87,12 @@ class RecordingSession {
     }
       
       //zTesting
-      
     let videoWriter = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
     videoWriter.expectsMediaDataInRealTime = true
-    
-//      // Calculate scaling factor
-//        let scaleX = CGFloat(targetWidth) / CGFloat(settings[AVVideoWidthKey] as? Int ?? 1)
-//        let scaleY = CGFloat(targetHeight) / CGFloat(settings[AVVideoHeightKey] as? Int ?? 1)
-//
-//        // Apply scaling transformation
-//        videoWriter.transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
-
       
-//    videoWriter.transform = CGAffineTransform(rotationAngle: 180)
+//      // Calculate scaling factor
+//      videoWriter.transform = .identity // Set to identity transformation to avoid rotation
+
       //end ztesting
     assetWriter.add(videoWriter)
     

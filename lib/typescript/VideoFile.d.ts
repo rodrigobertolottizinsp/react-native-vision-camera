@@ -34,8 +34,10 @@ export interface RecordVideoOptions {
      * @default 'normal'
      */
     videoBitRate?: 'low' | 'normal' | 'high' | number;
-    filePath: String
-    maxFileSize: number
+    filePath: String;
+    maxFileSize: number;
+    videoMode: boolean;
+
 }
 /**
  * Represents a Video taken by the Camera written to the local filesystem.

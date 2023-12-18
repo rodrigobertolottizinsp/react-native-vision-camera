@@ -27,6 +27,7 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
       .put("cameraInitialized", MapBuilder.of("registrationName", "onInitialized"))
       .put("cameraError", MapBuilder.of("registrationName", "onError"))
       .put("cameraCodeScanned", MapBuilder.of("registrationName", "onCodeScanned"))
+      .put("zoomChanged",MapBuilder.of("registrationName", "onZoomChanged"))
       .build()
 
   override fun getName(): String = TAG

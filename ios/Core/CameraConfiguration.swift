@@ -45,6 +45,7 @@ class CameraConfiguration {
   // isActive (Start/Stop)
   var isActive = false
     var maxFileSize = 0
+    var videoMode = false
   // Audio Session
   var audio: OutputConfiguration<Audio> = .disabled
 
@@ -66,7 +67,7 @@ class CameraConfiguration {
       isActive = other.isActive
       audio = other.audio
         maxFileSize = other.maxFileSize
-        
+        videoMode = other.videoMode
     } else {
       // self will just be initialized with the default values.
     }
@@ -84,7 +85,7 @@ class CameraConfiguration {
     let torchChanged: Bool
     let zoomChanged: Bool
     let exposureChanged: Bool
-
+      let videoModeChanged: Bool
     let audioSessionChanged: Bool
 
     /**
@@ -100,7 +101,7 @@ class CameraConfiguration {
      [`formatChanged`, `sidePropsChanged`, `zoomChanged`, `exposureChanged`]
      */
     var isDeviceConfigurationDirty: Bool {
-      return isSessionConfigurationDirty || formatChanged || sidePropsChanged || zoomChanged || exposureChanged
+      return isSessionConfigurationDirty || formatChanged || sidePropsChanged || zoomChanged || exposureChanged || videoModeChanged
     }
 
     init(between left: CameraConfiguration?, and right: CameraConfiguration) {
@@ -122,7 +123,7 @@ class CameraConfiguration {
       zoomChanged = formatChanged || left?.zoom != right.zoom
       // exposure (depends on device)
       exposureChanged = inputChanged || left?.exposure != right.exposure
-
+        videoModeChanged = left?.videoMode != right.videoMode
       // audio session
       audioSessionChanged = left?.audio != right.audio
     }

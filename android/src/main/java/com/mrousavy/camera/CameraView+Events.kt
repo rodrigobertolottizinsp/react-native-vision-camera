@@ -40,7 +40,14 @@ fun CameraView.invokeOnError(error: Throwable) {
 fun CameraView.invokeOnViewReady() {
   val event = Arguments.createMap()
   val reactContext = context as ReactContext
-  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "cameraViewReady", event)
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "cameraViewReady", null)
+}
+
+fun CameraView.invokeOnZoomChanged(zoom: Double) {
+  val event = Arguments.createMap()
+  event.putDouble("zoomFactor", zoom)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomChanged", event)
 }
 
 fun CameraView.invokeOnCodeScanned(barcodes: List<Barcode>, scannerFrame: CodeScannerFrame) {

@@ -228,7 +228,7 @@ export interface CameraProps extends ViewProps {
      */
     onInitialized?: () => void;
     onZoomChanged: (number) => void
-
+    videoMode: boolean
     /**
      * A worklet which will be called for every frame the Camera "sees".
      *

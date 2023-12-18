@@ -49,6 +49,7 @@ public final class CameraView: UIView, CameraSessionDelegate {
   @objc var zoom: NSNumber = 1.0 // in "factor"
   @objc var exposure: NSNumber = 1.0
   @objc var enableFpsGraph = false
+    @objc var videoMode = false
   @objc var videoStabilizationMode: NSString?
     @objc var onZoomChanged: RCTDirectEventBlock?
     let motionManager = CMMotionManager()
@@ -130,34 +131,33 @@ public final class CameraView: UIView, CameraSessionDelegate {
         var deviceOrientation: UIInterfaceOrientation = .portrait
         switch orientation {
         case .portrait:
-            print("Portrait")
             deviceOrientation = .portrait
             break
         case .portraitUpsideDown:
-            print("Portrait Upside Down")
             deviceOrientation = .portrait
             break
         case .landscapeLeft:
-            print("Landscape Left")
             deviceOrientation = .landscapeRight
             break
         case .landscapeRight:
-            print("Landscape Right")
             deviceOrientation = .landscapeLeft
             break
         default:
-            print("Unknown")
             deviceOrientation = .portrait
             break
         }
-        self.previewView.videoPreviewLayer.session?.outputs.forEach { output in
-            output.connections.forEach { connection in
-                if connection.isVideoMirroringSupported {
-                    connection.automaticallyAdjustsVideoMirroring = false
-                    connection.setInterfaceOrientation(deviceOrientation)
-                }
-                self.previewView.videoPreviewLayer.connection?.setInterfaceOrientation(deviceOrientation)
-            }}
+        if (cameraSession.configuration?.videoMode == false) {
+            self.previewView.videoPreviewLayer.session?.outputs.forEach { output in
+                output.connections.forEach { connection in
+                    if connection.isVideoMirroringSupported {
+                        connection.automaticallyAdjustsVideoMirroring = false
+                        connection.setInterfaceOrientation(deviceOrientation)
+                    }
+                    self.previewView.videoPreviewLayer.connection?.setInterfaceOrientation(deviceOrientation)
+                }}
+        } else {
+            self.previewView.videoPreviewLayer.connection?.setInterfaceOrientation(deviceOrientation)
+        }
     }
 
   override public func layoutSubviews() {
@@ -270,6 +270,7 @@ public final class CameraView: UIView, CameraSessionDelegate {
       config.isActive = isActive
         
         config.maxFileSize = maxFileSize
+        config.videoMode = videoMode
     }
 
     // Store `zoom` offset for native pinch-gesture

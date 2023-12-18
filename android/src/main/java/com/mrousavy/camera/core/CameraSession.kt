@@ -144,6 +144,11 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
           configureCaptureRequest(config)
         }
 
+        if (diff.orientationChanged) {
+          configureOrientation(config)
+          print("Orientation changed!! current: " + orientation)
+
+        }
         Log.i(TAG, "Successfully updated CameraSession Configuration! isActive: ${config.isActive}")
         this.configuration = config
 
@@ -461,7 +466,12 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     isRunning = true
   }
 
-  fun resizeImageV2(originalImage: Image, newWidth: Int, newHeight: Int): Image {
+  private fun configureOrientation(config: CameraConfiguration) {
+    println("Orientation changing")
+  }
+
+
+    fun resizeImageV2(originalImage: Image, newWidth: Int, newHeight: Int): Image {
     val buffer = imageToByteBuffer(originalImage)
     val bitmap = byteBufferToBitmap(buffer)
     val resizedBitmap = resizeBitmap(bitmap, newWidth, newHeight)
@@ -545,6 +555,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
 
     val cameraCharacteristics = cameraManager.getCameraCharacteristics(captureSession.device.id)
     val orientation = outputOrientation.toSensorRelativeOrientation(cameraCharacteristics)
+    print("Orientation: "+ orientation + "Height: " + previewView?.height +  " Width: " + previewView?.width);
     val enableHdr = configuration?.photoHdr ?: false
     val captureRequest = captureSession.device.createPhotoCaptureRequest(
       cameraManager,
@@ -693,5 +704,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     fun onError(error: Throwable)
     fun onInitialized()
     fun onCodeScanned(codes: List<Barcode>, scannerFrame: CodeScannerFrame)
+    fun onZoomChanged(zoom: Double)
   }
 }

@@ -218,6 +218,7 @@ export declare class Camera extends React.PureComponent<CameraProps> {
     private setFrameProcessor;
     private unsetFrameProcessor;
     private onViewReady;
+    private onZoomChanged;
     /** @internal */
     componentDidUpdate(): void;
     /** @internal */

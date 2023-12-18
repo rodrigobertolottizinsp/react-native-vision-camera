@@ -35,8 +35,9 @@ export interface RecordVideoOptions {
    * @default 'normal'
    */
   videoBitRate?: 'low' | 'normal' | 'high' | number
-  filePath: String
-  maxFileSize: number
+  filePath: String;
+  maxFileSize: number;
+  videoMode: boolean;
 }
 
 /**
