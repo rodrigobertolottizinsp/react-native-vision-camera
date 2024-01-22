@@ -55,11 +55,13 @@ extension CameraSession {
    */
   func configureOutputs(configuration: CameraConfiguration) throws {
     ReactLogger.log(level: .info, message: "Configuring Outputs...")
-
     // Remove all outputs
+    
     captureSession.outputs.forEach { output in
       captureSession.removeOutput(output)
     }
+
+
     photoOutput = nil
     videoOutput = nil
     codeScannerOutput = nil
@@ -92,6 +94,7 @@ extension CameraSession {
       if photo.enableDepthData {
         photoOutput.isDepthDataDeliveryEnabled = photoOutput.isDepthDataDeliverySupported
       }
+
       if #available(iOS 12.0, *), photo.enablePortraitEffectsMatte {
         photoOutput.isPortraitEffectsMatteDeliveryEnabled = photoOutput.isPortraitEffectsMatteDeliverySupported
       }
@@ -113,6 +116,7 @@ extension CameraSession {
       // 2. Configure
       videoOutput.setSampleBufferDelegate(self, queue: CameraQueues.videoQueue)
       videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.videoSettings 
       self.videoOutput = videoOutput
     }
 

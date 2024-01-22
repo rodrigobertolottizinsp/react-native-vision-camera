@@ -1,4 +1,5 @@
 import type { ViewProps } from 'react-native';
+import { Double } from 'react-native/Libraries/Types/CodegenTypes';
 import type { CameraDevice, CameraDeviceFormat, VideoStabilizationMode } from './CameraDevice';
 import type { CameraRuntimeError } from './CameraError';
 import { CodeScanner } from './CodeScanner';
@@ -106,6 +107,7 @@ export interface CameraProps extends ViewProps {
      * The value between min- and max supported exposure is considered the default, neutral value.
      */
     exposure?: number;
+    photoWidth? : number;
     /**
      * Selects a given format. By default, the best matching format is chosen. See {@linkcode CameraDeviceFormat}
      *
@@ -263,5 +265,9 @@ export interface CameraProps extends ViewProps {
      * return <Camera {...props} codeScanner={codeScanner} />
      */
     codeScanner?: CodeScanner;
+    pictureWidth?: number;
+    videoResolution?: number;
+    aspectRatio: Double;
+    isFocused?: boolean
 }
 //# sourceMappingURL=CameraProps.d.ts.map

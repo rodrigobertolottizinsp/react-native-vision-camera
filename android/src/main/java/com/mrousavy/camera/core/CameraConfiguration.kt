@@ -40,7 +40,9 @@ data class CameraConfiguration(
 
   // isActive (Start/Stop)
   var isActive: Boolean = false,
-
+  var pictureWidth: Int? = 0,
+  var isFocused: Boolean = true,
+  var aspectRatio: Double = 4.0 / 3.0,
   // Audio Session
   var audio: Output<Audio> = Output.Disabled.create()
 ) {
@@ -88,11 +90,10 @@ data class CameraConfiguration(
 
     fun difference(left: CameraConfiguration?, right: CameraConfiguration): Difference {
       val deviceChanged = left?.cameraId != right.cameraId
-
       val outputsChanged = deviceChanged || // input device
         left?.photo != right.photo || left.video != right.video || left.codeScanner != right.codeScanner ||
         left.preview != right.preview || // outputs
-        left.videoHdr != right.videoHdr || left.photoHdr != right.photoHdr || left.format != right.format // props that affect the outputs
+        left.videoHdr != right.videoHdr || left.photoHdr != right.photoHdr || left.format != right.format || left.pictureWidth != right.pictureWidth || left.aspectRatio != right.aspectRatio // props that affect the outputs
 
       val sidePropsChanged = outputsChanged || // depend on outputs
         left?.torch != right.torch || left.enableLowLightBoost != right.enableLowLightBoost || left.fps != right.fps ||

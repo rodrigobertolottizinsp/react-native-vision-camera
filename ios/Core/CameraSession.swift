@@ -206,7 +206,9 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
   private func withSessionLock(_ lambda: () throws -> Void) throws {
     // Lock Capture Session for configuration
     ReactLogger.log(level: .info, message: "Beginning CameraSession configuration...")
-    captureSession.beginConfiguration()
+
+      captureSession.beginConfiguration()
+      
     defer {
       // Unlock Capture Session again and submit configuration to Hardware
       self.captureSession.commitConfiguration()
@@ -224,6 +226,7 @@ class CameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVC
     guard let device = videoDeviceInput?.device else {
       throw CameraError.session(.cameraNotReady)
     }
+      
     ReactLogger.log(level: .info, message: "Beginning CaptureDevice configuration...")
     try device.lockForConfiguration()
     defer {

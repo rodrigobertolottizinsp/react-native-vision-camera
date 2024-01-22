@@ -1,4 +1,5 @@
 import type { ViewProps } from 'react-native'
+import { Double } from 'react-native/Libraries/Types/CodegenTypes'
 import type { CameraDevice, CameraDeviceFormat, VideoStabilizationMode } from './CameraDevice'
 import type { CameraRuntimeError } from './CameraError'
 import { CodeScanner } from './CodeScanner'
@@ -288,5 +289,9 @@ export interface CameraProps extends ViewProps {
    * return <Camera {...props} codeScanner={codeScanner} />
    */
   codeScanner?: CodeScanner
+  pictureWidth?: number
+  videoResolution?: number
+  aspectRatio?: Double
+  isFocused?: boolean
   //#endregion
 }

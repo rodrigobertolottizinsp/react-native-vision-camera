@@ -79,6 +79,10 @@ class CameraView(context: Context) :
   var torch: Torch = Torch.OFF
   var zoom: Float = 1f // in "factor"
   var exposure: Double = 1.0
+  var pictureWidth: Int = 0
+  var videoResolution: String = "480p"
+  var isFocused: Boolean? = true
+  var aspectRatio: Double = 4.0 / 3.0
   var orientation: Orientation = Orientation.PORTRAIT
   var enableZoomGesture: Boolean = false
     set(value) {
@@ -203,7 +207,9 @@ class CameraView(context: Context) :
 
         // Zoom
         config.zoom = zoom
-
+        config.pictureWidth = pictureWidth
+        config.isFocused = isFocused == true
+        config.aspectRatio = aspectRatio
         // isActive
         config.isActive = isActive && isAttachedToWindow
       }
@@ -217,11 +223,18 @@ class CameraView(context: Context) :
         context,
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
           override fun onScale(detector: ScaleGestureDetector): Boolean {
-            zoom *= detector.scaleFactor
-            update()
-            onZoomChanged(zoom.toDouble())
-            println("zoom value"+ zoom)
-            return true
+            var maxZoom = format!!.getInt("maxZoom")
+            var newZoom = zoom * detector.scaleFactor
+            if (newZoom <= maxZoom) {
+
+              zoom = newZoom
+              onZoomChanged(zoom.toDouble())
+              update()
+              return true
+            } else {
+              onZoomChanged(maxZoom.toDouble())
+              return false
+            }
           }
         }
       )
@@ -246,7 +259,6 @@ class CameraView(context: Context) :
   }
 
   override fun onZoomChanged(zoom: Double){
-    println("INVOKING ONZOOM CHANGED" +  zoom)
     invokeOnZoomChanged(zoom)
   }
 }

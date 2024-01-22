@@ -35,7 +35,6 @@ fun CameraCharacteristics.getAutomaticPreviewSize(): Size {
   val maximumPreviewSize = getMaximumPreviewSize()
   val outputSizes = config.getOutputSizes(SurfaceHolder::class.java)
     .sortedByDescending { it.width * it.height }
-
   return outputSizes.first { it.bigger <= maximumPreviewSize.bigger && it.smaller <= maximumPreviewSize.smaller }
 }
 

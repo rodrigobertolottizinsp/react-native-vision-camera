@@ -2,10 +2,12 @@ package com.mrousavy.camera.core
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.hardware.camera2.CameraManager
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.FrameLayout
@@ -14,7 +16,6 @@ import com.mrousavy.camera.extensions.getMaximumPreviewSize
 import com.mrousavy.camera.extensions.getPreviewTargetSize
 import com.mrousavy.camera.extensions.smaller
 import com.mrousavy.camera.types.CameraDeviceFormat
-import com.mrousavy.camera.types.Orientation
 import com.mrousavy.camera.types.ResizeMode
 import kotlin.math.roundToInt
 
@@ -40,11 +41,12 @@ class PreviewView(context: Context, callback: SurfaceHolder.Callback) : SurfaceV
   init {
     Log.i(TAG, "Creating PreviewView...")
     layoutParams = FrameLayout.LayoutParams(
-      FrameLayout.LayoutParams.MATCH_PARENT,
-      FrameLayout.LayoutParams.MATCH_PARENT,
-      Gravity.CENTER
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            Gravity.CENTER
     )
     holder.addCallback(callback)
+
   }
 
   fun resizeToInputCamera(cameraId: String, cameraManager: CameraManager, format: CameraDeviceFormat?) {
@@ -55,8 +57,8 @@ class PreviewView(context: Context, callback: SurfaceHolder.Callback) : SurfaceV
     size = characteristics.getPreviewTargetSize(formatAspectRatio)
   }
 
-  private fun getSize(contentSize: Size, containerSize: Size, resizeMode: ResizeMode): Size {
-    val contentAspectRatio = contentSize.height.toDouble() / contentSize.width
+  fun getSize(contentSize: Size, containerSize: Size, resizeMode: ResizeMode): Size {
+    var contentAspectRatio = contentSize.height.toDouble() / contentSize.width
     val containerAspectRatio = containerSize.width.toDouble() / containerSize.height
 
     Log.d(TAG, "coverSize :: $contentSize ($contentAspectRatio), ${containerSize.width}x${containerSize.height} ($containerAspectRatio)")
@@ -86,9 +88,13 @@ class PreviewView(context: Context, callback: SurfaceHolder.Callback) : SurfaceV
     Log.i(TAG, "PreviewView onMeasure($viewWidth, $viewHeight)")
 
     val fittedSize = getSize(size, Size(viewWidth, viewHeight), resizeMode)
-
     Log.d(TAG, "Fitted dimensions set: $fittedSize")
-    setMeasuredDimension(fittedSize.width, fittedSize.height)
+//    setMeasuredDimension(fittedSize.width, fittedSize.height)
+    if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+      setMeasuredDimension(size.width, size.height)
+    }else{
+      setMeasuredDimension(fittedSize.width, fittedSize.height)
+    }
   }
 
   companion object {

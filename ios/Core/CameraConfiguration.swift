@@ -85,7 +85,6 @@ class CameraConfiguration {
     let torchChanged: Bool
     let zoomChanged: Bool
     let exposureChanged: Bool
-      let videoModeChanged: Bool
     let audioSessionChanged: Bool
 
     /**
@@ -101,7 +100,7 @@ class CameraConfiguration {
      [`formatChanged`, `sidePropsChanged`, `zoomChanged`, `exposureChanged`]
      */
     var isDeviceConfigurationDirty: Bool {
-      return isSessionConfigurationDirty || formatChanged || sidePropsChanged || zoomChanged || exposureChanged || videoModeChanged
+      return isSessionConfigurationDirty || formatChanged || sidePropsChanged || zoomChanged || exposureChanged
     }
 
     init(between left: CameraConfiguration?, and right: CameraConfiguration) {
@@ -112,7 +111,7 @@ class CameraConfiguration {
       // videoStabilizationMode
       videoStabilizationChanged = outputsChanged || left?.videoStabilizationMode != right.videoStabilizationMode
       // orientation
-      orientationChanged = outputsChanged || left?.orientation != right.orientation
+      orientationChanged = left?.orientation != right.orientation
       // format (depends on cameraId)
       formatChanged = inputChanged || left?.format != right.format
       // side-props (depends on format)
@@ -123,7 +122,6 @@ class CameraConfiguration {
       zoomChanged = formatChanged || left?.zoom != right.zoom
       // exposure (depends on device)
       exposureChanged = inputChanged || left?.exposure != right.exposure
-        videoModeChanged = left?.videoMode != right.videoMode
       // audio session
       audioSessionChanged = left?.audio != right.audio
     }

@@ -1,3 +1,4 @@
+import { Double } from 'react-native/Libraries/Types/CodegenTypes'
 import { Orientation } from './Orientation'
 import type { TemporaryFile } from './TemporaryFile'
 

@@ -53,7 +53,22 @@ suspend fun CameraView.startRecording(options: ReadableMap, onRecordCallback: Ca
     val errorMap = makeErrorMap(error.code, error.message)
     onRecordCallback(null, errorMap)
   }
-  cameraSession.startRecording(audio == true, codec, fileType, bitRate, callback, onError)
+  var filePath: String = ""
+  if (options.hasKey("filePath")){
+    filePath = options.getString("filePath").toString()
+  }
+
+  var orientation: String = ""
+  if (options.hasKey("orientation")){
+    orientation = options.getString("orientation").toString()
+  }
+
+  var maxFileSize: Int = 0
+  if (options.hasKey("maxFileSize")){
+    maxFileSize = options.getInt("maxFileSize")
+  }
+
+  cameraSession.startRecording(audio == true, codec, fileType, bitRate, callback, onError, filePath, maxFileSize, orientation)
 }
 
 @SuppressLint("RestrictedApi")

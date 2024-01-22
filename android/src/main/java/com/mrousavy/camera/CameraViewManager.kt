@@ -62,6 +62,21 @@ class CameraViewManager : ViewGroupManager<CameraView>() {
     view.enableFrameProcessor = enableFrameProcessor
   }
 
+  @ReactProp(name = "pictureWidth")
+  fun setPictureWidth(view: CameraView, pictureWidth: Int) {
+    view.pictureWidth = pictureWidth
+  }
+
+    @ReactProp(name = "isFocused")
+  fun setIsFocused(view: CameraView, isFocused: Boolean) {
+    view.isFocused = isFocused
+  }
+
+  @ReactProp(name = "aspectRatio")
+  fun setAspectRatio(view: CameraView, aspectRatio: Double) {
+    view.aspectRatio = aspectRatio
+  }
+
   @ReactProp(name = "pixelFormat")
   fun setPixelFormat(view: CameraView, pixelFormat: String?) {
     val newPixelFormat = PixelFormat.fromUnionValue(pixelFormat)

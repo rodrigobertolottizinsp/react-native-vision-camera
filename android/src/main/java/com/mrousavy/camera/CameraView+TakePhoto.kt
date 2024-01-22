@@ -13,6 +13,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.mrousavy.camera.core.CameraSession
 import com.mrousavy.camera.types.Flash
+import com.mrousavy.camera.types.Orientation
 import com.mrousavy.camera.types.QualityPrioritization
 import com.mrousavy.camera.utils.*
 import java.io.File
@@ -33,7 +34,7 @@ suspend fun CameraView.takePhoto(optionsMap: ReadableMap): WritableMap {
   val enableShutterSound = options["enableShutterSound"] as? Boolean ?: true
   val filePath = options["filePath"] as? String ?: ""
   val targetWidth = options["targetWidth"] as? Int ?: 0
-  val aspectRatio = options["aspectRatio"] as? Double ?: 16/9
+  val aspectRatio = options["aspectRatio"] as? Double ?: 4/3
 
   val flashMode = Flash.fromUnionValue(flash)
   val qualityPrioritizationMode = QualityPrioritization.fromUnionValue(qualityPrioritization)
@@ -81,13 +82,17 @@ private fun resizeBitmap(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap 
 
   return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, false)
 }
-private fun writePhotoToFile(photo: CameraSession.CapturedPhoto, file: File) {
+private fun writePhotoToFile(photo: CameraSession.CapturedPhoto, file: File, cameraCharacteristics: CameraCharacteristics) {
   val byteBuffer = photo.image.planes[0].buffer
   if (photo.isMirrored) {
     val imageBytes = ByteArray(byteBuffer.remaining()).apply { byteBuffer.get(this) }
     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     val matrix = Matrix()
-    matrix.preScale(-1f, 1f)
+
+    val sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!.toFloat()
+    matrix.setRotate(sensorOrientation)
+    matrix.postScale(-1f, 1f, bitmap.getWidth() / 2f, bitmap.getHeight() / 2f);
+  
     val processedBitmap =
       Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, false)
 
@@ -110,7 +115,7 @@ private suspend fun savePhotoToFile(
   when (photo.format) {
     ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
       val file = createCustomFile(filePath, ".jpg")
-      writePhotoToFile(photo, file)
+      writePhotoToFile(photo, file, cameraCharacteristics)
       return@withContext file.absolutePath
     }
     ImageFormat.RAW_SENSOR -> {

@@ -31,7 +31,8 @@ fun CameraDevice.createPhotoCaptureRequest(
   enableRedEyeReduction: Boolean,
   enableAutoStabilization: Boolean,
   enableHdr: Boolean,
-  orientation: Orientation
+  orientation: Orientation,
+  isSelfie: Boolean
 ): CaptureRequest {
   val cameraCharacteristics = cameraManager.getCameraCharacteristics(this.id)
 
@@ -50,8 +51,12 @@ fun CameraDevice.createPhotoCaptureRequest(
     QualityPrioritization.QUALITY -> 100
   }
   captureRequest.set(CaptureRequest.JPEG_QUALITY, jpegQuality.toByte())
+  var resultOrientation = orientation.toDegrees()
 
-  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, orientation.toDegrees())
+  if (!isSelfie && orientation != Orientation.LANDSCAPE_RIGHT) {
+    resultOrientation = orientation.toDegrees() + 180
+  }
+  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, resultOrientation)
 
   // TODO: Use the same options as from the preview request. This is duplicate code!
 

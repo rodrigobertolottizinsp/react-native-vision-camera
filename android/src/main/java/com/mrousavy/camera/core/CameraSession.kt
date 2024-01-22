@@ -38,13 +38,6 @@ import com.mrousavy.camera.extensions.openCamera
 import com.mrousavy.camera.extensions.setZoom
 import com.mrousavy.camera.extensions.smaller
 import com.mrousavy.camera.frameprocessor.FrameProcessor
-import com.mrousavy.camera.types.Flash
-import com.mrousavy.camera.types.Orientation
-import com.mrousavy.camera.types.QualityPrioritization
-import com.mrousavy.camera.types.Torch
-import com.mrousavy.camera.types.VideoCodec
-import com.mrousavy.camera.types.VideoFileType
-import com.mrousavy.camera.types.VideoStabilizationMode
 import java.io.Closeable
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineContext
@@ -56,6 +49,7 @@ import kotlinx.coroutines.sync.withLock
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import com.mrousavy.camera.types.*
 import java.nio.ByteBuffer
 
 class CameraSession(private val context: Context, private val cameraManager: CameraManager, private val callback: CameraSessionCallback) :
@@ -145,10 +139,9 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
         }
 
         if (diff.orientationChanged) {
-          configureOrientation(config)
-          print("Orientation changed!! current: " + orientation)
-
+          //UPDATE SIZE HERE
         }
+
         Log.i(TAG, "Successfully updated CameraSession Configuration! isActive: ${config.isActive}")
         this.configuration = config
 
@@ -278,6 +271,10 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
 
     val isSelfie = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
 
+    if (isSelfie){
+      configuration.zoom = 1f
+    }
+
     val outputs = mutableListOf<OutputConfiguration>()
 
     // Photo Output
@@ -285,7 +282,28 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     if (photo != null) {
       val imageFormat = ImageFormat.JPEG
       val sizes = characteristics.getPhotoSizes(imageFormat)
-      val size = sizes.closestToOrMax(format?.photoSize)
+      var size = sizes.closestToOrMax(format?.photoSize)
+      val aspectRatio = configuration.aspectRatio
+      var height = (configuration.pictureWidth!! / aspectRatio).toInt()
+      var width =  configuration.pictureWidth!!
+      var isFocused = configuration.isFocused!!
+
+//      val filteredSizes = sizes.filter { size ->
+//        // Check if the aspect ratio of the current size matches the desired aspect ratio
+//        val sizeAspectRatio = size.width.toDouble() / size.height
+//        Math.abs(sizeAspectRatio - aspectRatio) < 0.01 // Adjust the threshold as needed
+//      }
+//
+//      if (width == 0) {
+//        size = filteredSizes.maxBy { size -> size.height }
+//      }else {
+//        size = filteredSizes.minByOrNull { size ->
+//          val widthDifference = Math.abs(size.width - width)
+//          val heightDifference = Math.abs(size.height - height)
+//          widthDifference + heightDifference
+//        }!!
+//      }
+
       val maxImages = 3
 
       Log.i(TAG, "Adding ${size.width} x ${size.height} Photo Output in Format #$imageFormat...")
@@ -306,7 +324,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       val imageFormat = video.config.pixelFormat.toImageFormat()
       val sizes = characteristics.getVideoSizes(cameraDevice.id, imageFormat)
       val size = sizes.closestToOrMax(format?.videoSize)
-
       Log.i(TAG, "Adding ${size.width} x ${size.height} Video Output in Format #$imageFormat...")
       val videoPipeline = VideoPipeline(
         size.width,
@@ -334,10 +351,10 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
 
       Log.i(TAG, "Adding ${size.width} x ${size.height} Preview Output...")
       val output = SurfaceOutput(
-        preview.config.surface,
-        size,
-        SurfaceOutput.OutputType.PREVIEW,
-        configuration.videoHdr
+              preview.config.surface,
+              size,
+              SurfaceOutput.OutputType.PREVIEW,
+              configuration.videoHdr
       )
       outputs.add(output.toOutputConfiguration(characteristics))
       previewOutput = output
@@ -398,6 +415,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     videoOutput?.let { output ->
       captureRequest.addTarget(output.surface)
     }
+
     codeScannerOutput?.let { output ->
       captureRequest.addTarget(output.surface)
     }
@@ -412,7 +430,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       }
       captureRequest.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(fps, fps))
     }
-
     // Set Video Stabilization
     when (config.videoStabilizationMode) {
       VideoStabilizationMode.OFF -> {
@@ -464,10 +481,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     val request = captureRequest.build()
     captureSession.setRepeatingRequest(request, null, null)
     isRunning = true
-  }
-
-  private fun configureOrientation(config: CameraConfiguration) {
-    println("Orientation changing")
   }
 
 
@@ -552,11 +565,11 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     Log.i(TAG, "Photo capture 0/3 - preparing capture request (${photoOutput.size.width}x${photoOutput.size.height})...")
 
     val zoom = configuration?.zoom ?: 1f
-
     val cameraCharacteristics = cameraManager.getCameraCharacteristics(captureSession.device.id)
     val orientation = outputOrientation.toSensorRelativeOrientation(cameraCharacteristics)
-    print("Orientation: "+ orientation + "Height: " + previewView?.height +  " Width: " + previewView?.width);
+    Log.i(TAG,"Sensor orientation in take picture: " + orientation + " context orientation : " + context.resources.configuration.orientation)
     val enableHdr = configuration?.photoHdr ?: false
+    val isSelfie = cameraDevice?.id?.let { cameraManager.getCameraCharacteristics(it)?.get(CameraCharacteristics.LENS_FACING) } == CameraCharacteristics.LENS_FACING_FRONT
     val captureRequest = captureSession.device.createPhotoCaptureRequest(
       cameraManager,
       photoOutput.surface,
@@ -566,7 +579,8 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       enableRedEyeReduction,
       enableAutoStabilization,
       enableHdr,
-      orientation
+      orientation,
+            isSelfie
     )
     Log.i(TAG, "Photo capture 1/3 - starting capture...")
     val result = captureSession.capture(captureRequest, enableShutterSound)
@@ -574,7 +588,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     Log.i(TAG, "Photo capture 2/3 complete - received metadata with timestamp $timestamp")
     try {
       val image = photoOutputSynchronizer.await(timestamp)
-//      val resizedImage = resizeImageV2(image, 500, 500)
       val isMirrored = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
 
       Log.i(TAG, "Photo capture 3/3 complete - received ${image.width} x ${image.height} image.")
@@ -589,6 +602,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     photoOutputSynchronizer.set(image.timestamp, image)
   }
 
+
   private fun updateVideoOutputs() {
     val videoOutput = videoOutput ?: return
     Log.i(TAG, "Updating Video Outputs...")
@@ -602,16 +616,31 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     fileType: VideoFileType,
     bitRate: Double?,
     callback: (video: RecordingSession.Video) -> Unit,
-    onError: (error: RecorderError) -> Unit
+    onError: (error: RecorderError) -> Unit,
+    filePath: String,
+    maxFileSize: Int,
+    orientation: String
   ) {
     mutex.withLock {
       if (recording != null) throw RecordingInProgressError()
       val videoOutput = videoOutput ?: throw VideoNotEnabledError()
 
       val fps = configuration?.fps ?: 30
+    //ztesting orientation param
+      var orientationVal: Orientation = Orientation.PORTRAIT
 
+      if (orientation == "portrait"){
+        orientationVal = Orientation.PORTRAIT
+      }
+      if (orientation == "landscape-right"){
+        orientationVal = Orientation.LANDSCAPE_LEFT
+
+      }
+      if (orientation == "landscape-left"){
+        orientationVal = Orientation.LANDSCAPE_RIGHT
+      }
       val recording =
-        RecordingSession(context, videoOutput.size, enableAudio, fps, codec, orientation, fileType, bitRate, callback, onError)
+        RecordingSession(context, videoOutput.size, enableAudio, fps, codec, orientationVal, fileType, bitRate, callback, onError, filePath, maxFileSize)
       recording.start()
       this.recording = recording
     }

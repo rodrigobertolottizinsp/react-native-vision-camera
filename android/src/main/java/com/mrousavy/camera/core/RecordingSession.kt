@@ -1,5 +1,6 @@
 package com.mrousavy.camera.core
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaRecorder
@@ -12,6 +13,7 @@ import com.mrousavy.camera.types.VideoCodec
 import com.mrousavy.camera.types.VideoFileType
 import java.io.File
 
+@SuppressLint("SuspiciousIndentation")
 class RecordingSession(
   context: Context,
   val size: Size,
@@ -22,7 +24,9 @@ class RecordingSession(
   private val fileType: VideoFileType = VideoFileType.MP4,
   videoBitRate: Double? = null,
   private val callback: (video: Video) -> Unit,
-  private val onError: (error: RecorderError) -> Unit
+  private val onError: (error: RecorderError) -> Unit,
+  private val filePath: String,
+  private val maxFileSize: Int
 ) {
   companion object {
     private const val TAG = "RecordingSession"
@@ -41,8 +45,8 @@ class RecordingSession(
   val surface: Surface = MediaCodec.createPersistentInputSurface()
 
   init {
+    var path = filePath
     outputFile = File.createTempFile("mrousavy", fileType.toExtension(), context.cacheDir)
-
     Log.i(TAG, "Creating RecordingSession for ${outputFile.absolutePath}")
 
     recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context) else MediaRecorder()
@@ -51,7 +55,9 @@ class RecordingSession(
     recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
 
     recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-    recorder.setOutputFile(outputFile.absolutePath)
+//    recorder.setOutputFile(outputFile.absolutePath)
+    recorder.setOutputFile(path)
+    recorder.setMaxFileSize(maxFileSize.toLong())
     recorder.setVideoEncodingBitRate((bitRate * 1_000_000).toInt())
     recorder.setVideoSize(size.height, size.width)
     if (fps != null) recorder.setVideoFrameRate(fps)
@@ -66,7 +72,9 @@ class RecordingSession(
       recorder.setAudioChannels(AUDIO_CHANNELS)
     }
     recorder.setInputSurface(surface)
-    // recorder.setOrientationHint(orientation.toDegrees())
+
+  var resultOrientation = orientation.toDegrees()
+    recorder.setOrientationHint(resultOrientation)
 
     recorder.setOnErrorListener { _, what, extra ->
       Log.e(TAG, "MediaRecorder Error: $what ($extra)")
@@ -80,6 +88,17 @@ class RecordingSession(
     }
     recorder.setOnInfoListener { _, what, extra ->
       Log.i(TAG, "MediaRecorder Info: $what ($extra)")
+      when (what) {
+        MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED -> {
+          Log.i(TAG, "Maximum file size reached: $maxFileSize bytes")
+          // Add your code here to handle the event when the maximum file size is reached
+          // You might want to stop recording or take appropriate action
+          stop()
+        }
+        else -> {
+          // Handle other informational events if needed
+        }
+      }
     }
 
     Log.i(TAG, "Created $this!")
@@ -106,7 +125,7 @@ class RecordingSession(
 
       val stopTime = System.currentTimeMillis()
       val durationMs = stopTime - (startTime ?: stopTime)
-      callback(Video(outputFile.absolutePath, durationMs))
+      callback(Video(filePath, durationMs))
     }
   }
 

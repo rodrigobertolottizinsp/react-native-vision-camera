@@ -80,15 +80,54 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
            return inputImage.transformed(by: transform)
        }
     
+//    func cropImageVertically(image: CIImage, aspectRatio: CGFloat ) -> CIImage? {
+//            // Calculate the target width based on the aspect ratio
+//            let orientation = image.properties["Orientation"] as? Int
+//            var targetHeight = image.extent.width;
+//            var targetWidth = image.extent.height
+//            let parsedWidth = CGFloat(image.extent.width)
+//            let parsedHeight = CGFloat(image.extent.height)
+//            var verticalCropStartPoint = 0.0
+//            var horizontalCropStartPoint = 0.0
+//            if (image.extent.width < image.extent.height){
+//                targetHeight =  parsedWidth * aspectRatio
+//                targetWidth = image.extent.width
+//                verticalCropStartPoint = image.extent.height - ((image.extent.height - targetHeight)/2)
+//            }else{
+//                targetWidth = parsedHeight * aspectRatio
+//                targetHeight = image.extent.height
+//                if (orientation == 3){
+//                    horizontalCropStartPoint = -image.extent.width
+//                    verticalCropStartPoint = image.extent.height
+//                }else{
+//                    horizontalCropStartPoint = (image.extent.width - targetWidth)/2
+//                }
+//            }
+//
+//            // Calculate the crop rectangle
+//            let cropRect = CGRect(x: horizontalCropStartPoint, y: -verticalCropStartPoint, width: targetWidth, height: targetHeight)
+//            
+//            // Apply the crop using CIFilter
+//            let croppedImage = image.cropped(to: cropRect)
+//            
+//            return croppedImage
+//        }
+    
     func cropImageVertically(image: CIImage, aspectRatio: CGFloat ) -> CIImage? {
             // Calculate the target width based on the aspect ratio
             let orientation = image.properties["Orientation"] as? Int
-            var targetHeight = image.extent.width;
-            var targetWidth = image.extent.height
+            var targetHeight = image.extent.height;
+            var targetWidth = image.extent.width
             let parsedWidth = CGFloat(image.extent.width)
             let parsedHeight = CGFloat(image.extent.height)
             var verticalCropStartPoint = 0.0
             var horizontalCropStartPoint = 0.0
+            let isSquare = aspectRatio == 1.0
+            let is169 = aspectRatio == 16.0/9.0
+        if (aspectRatio == 4.0/3.0){
+            return image
+        }
+        if (isSquare){
             if (image.extent.width < image.extent.height){
                 targetHeight =  parsedWidth * aspectRatio
                 targetWidth = image.extent.width
@@ -96,22 +135,40 @@ class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
             }else{
                 targetWidth = parsedHeight * aspectRatio
                 targetHeight = image.extent.height
+                horizontalCropStartPoint = (image.extent.width - targetWidth)/2
                 if (orientation == 3){
                     horizontalCropStartPoint = -image.extent.width
                     verticalCropStartPoint = image.extent.height
-                }else{
-                    horizontalCropStartPoint = (image.extent.width - targetWidth)/2
                 }
             }
+        }
+        if (is169){
+            if (image.extent.width < image.extent.height){
+                targetWidth = parsedHeight / aspectRatio
+                targetHeight = image.extent.height
+                horizontalCropStartPoint = (image.extent.width - targetWidth)/2
+                verticalCropStartPoint = image.extent.height
+            }else{
+                targetHeight =  parsedWidth / aspectRatio
+                targetWidth = parsedWidth
+                verticalCropStartPoint = -(image.extent.height - (image.extent.height - ((image.extent.height - targetHeight)/2)))
+                if (orientation == 3){
+                    horizontalCropStartPoint = -image.extent.width
+                    verticalCropStartPoint = image.extent.height
+                }
+            }
+        }
 
             // Calculate the crop rectangle
-            let cropRect = CGRect(x: horizontalCropStartPoint, y: -verticalCropStartPoint, width: targetWidth, height: targetHeight)
-            
+//            let cropRect = CGRect(x: horizontalCropStartPoint, y: verticalCropStartPoint, width: targetWidth, height: targetHeight)
+        let cropRect = CGRect(x: horizontalCropStartPoint, y: -verticalCropStartPoint, width: targetWidth, height: targetHeight)
             // Apply the crop using CIFilter
             let croppedImage = image.cropped(to: cropRect)
             
             return croppedImage
         }
+        
+
     
     func convertCIImageToJPEG(ciImage: CIImage, compressionQuality: CGFloat) -> Data? {
             let context = CIContext(options: [

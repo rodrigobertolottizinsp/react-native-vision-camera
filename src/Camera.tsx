@@ -410,7 +410,6 @@ export class Camera extends React.PureComponent<CameraProps> {
   }
 
   private onZoomChanged(event: NativeSyntheticEvent<number>): void {
-    console.log("Event in javascript: ", event.nativeEvent)
     this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
   }
 

@@ -94,10 +94,10 @@ public final class CameraView: UIView, CameraSessionDelegate {
     var fpsGraph: RCTFPSGraph?
   #endif
 
-  // pragma MARK: Setup
+  // pragma MARK: Setupx
 
   override public init(frame: CGRect) {
-    // Create CameraSession
+    // Create CameraSession 
     cameraSession = CameraSession()
     previewView = cameraSession.createPreviewView(frame: frame)
     super.init(frame: frame)
@@ -106,7 +106,7 @@ public final class CameraView: UIView, CameraSessionDelegate {
     addSubview(previewView)
 //      startOrientationListener()
       NotificationCenter.default.addObserver(self, selector: #selector(orientationChanged), name: UIDevice.orientationDidChangeNotification, object: nil)
-
+ 
   }
 
   @available(*, unavailable)
