@@ -1,13 +1,19 @@
 package com.mrousavy.camera.extensions
 
+import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
+import android.view.Display
+import android.view.OrientationEventListener
 import android.view.Surface
+import android.view.WindowManager
+import androidx.core.content.ContextCompat.getSystemService
 import com.mrousavy.camera.types.Flash
 import com.mrousavy.camera.types.Orientation
 import com.mrousavy.camera.types.QualityPrioritization
+
 
 private fun supportsSnapshotCapture(cameraCharacteristics: CameraCharacteristics): Boolean {
   // As per CameraDevice.TEMPLATE_VIDEO_SNAPSHOT in documentation:
@@ -22,6 +28,23 @@ private fun supportsSnapshotCapture(cameraCharacteristics: CameraCharacteristics
   return true
 }
 
+private fun getJpegOrientation(c: CameraCharacteristics, deviceOrientation: Int): Int {
+  var deviceOrientation = deviceOrientation
+  if (deviceOrientation == OrientationEventListener.ORIENTATION_UNKNOWN) return 0
+  val sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
+
+  // Round device orientation to a multiple of 90
+  deviceOrientation = (deviceOrientation + 45) / 90 * 90
+
+  // Reverse device orientation for front-facing cameras
+  val facingFront = c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
+  if (facingFront) deviceOrientation = -deviceOrientation
+
+  // Calculate desired JPEG orientation relative to camera orientation to make
+  // the image upright relative to the device orientation
+  return (sensorOrientation + deviceOrientation + 360) % 360
+}
+
 fun CameraDevice.createPhotoCaptureRequest(
   cameraManager: CameraManager,
   surface: Surface,
@@ -31,8 +54,7 @@ fun CameraDevice.createPhotoCaptureRequest(
   enableRedEyeReduction: Boolean,
   enableAutoStabilization: Boolean,
   enableHdr: Boolean,
-  orientation: Orientation,
-  isSelfie: Boolean
+  context: Context
 ): CaptureRequest {
   val cameraCharacteristics = cameraManager.getCameraCharacteristics(this.id)
 
@@ -51,12 +73,14 @@ fun CameraDevice.createPhotoCaptureRequest(
     QualityPrioritization.QUALITY -> 100
   }
   captureRequest.set(CaptureRequest.JPEG_QUALITY, jpegQuality.toByte())
-  var resultOrientation = orientation.toDegrees()
 
-  if (!isSelfie && orientation != Orientation.LANDSCAPE_RIGHT) {
-    resultOrientation = orientation.toDegrees() + 180
-  }
-  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, resultOrientation)
+//  if (!isSelfie) {
+//    if (orientation != Orientation.LANDSCAPE_RIGHT) {
+//      resultOrientation = orientation.toDegrees() + 180
+//    }
+//  }
+
+//  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, resultOrientation)
 
   // TODO: Use the same options as from the preview request. This is duplicate code!
 
@@ -96,7 +120,7 @@ fun CameraDevice.createPhotoCaptureRequest(
     }
   }
 
-  // TODO: Check if that zoom value is even supported.
+  // TODO: Check if that zoom value is even supported.  
   captureRequest.setZoom(zoom, cameraCharacteristics)
 
   // Set HDR
@@ -104,6 +128,20 @@ fun CameraDevice.createPhotoCaptureRequest(
   if (enableHdr) {
     captureRequest.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_HDR)
   }
+
+  val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+  val display = wm.defaultDisplay
+  var rotVal = 0
+  if (display.rotation == 0){
+    rotVal = getJpegOrientation(cameraCharacteristics, display.rotation)
+  } else if (display.rotation == 3){
+    rotVal = 180
+  } else if (display.rotation == 1){
+    rotVal = -90
+  }
+  val newOrientation = getJpegOrientation(cameraCharacteristics, display.rotation)
+
+  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, rotVal)
 
   return captureRequest.build()
 }

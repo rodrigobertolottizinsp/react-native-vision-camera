@@ -49,8 +49,10 @@ import kotlinx.coroutines.sync.withLock
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.view.WindowManager
 import com.mrousavy.camera.types.*
 import java.nio.ByteBuffer
+import android.view.Display
 
 class CameraSession(private val context: Context, private val cameraManager: CameraManager, private val callback: CameraSessionCallback) :
   Closeable,
@@ -557,7 +559,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     enableAutoStabilization: Boolean,
     outputOrientation: Orientation,
     targetWidth: Int,
-    aspectRatio: Double
+    aspectRatio: Double,
   ): CapturedPhoto {
     val captureSession = captureSession ?: throw CameraNotReadyError()
     val photoOutput = photoOutput ?: throw PhotoNotEnabledError()
@@ -567,7 +569,14 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     val zoom = configuration?.zoom ?: 1f
     val cameraCharacteristics = cameraManager.getCameraCharacteristics(captureSession.device.id)
     val orientation = outputOrientation.toSensorRelativeOrientation(cameraCharacteristics)
-    Log.i(TAG,"Sensor orientation in take picture: " + orientation + " context orientation : " + context.resources.configuration.orientation)
+
+    val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+
+    // Retrieve the sensor orientation property
+    val sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+
+
+    Log.i(TAG,"Sensor orientation in take picture: " + orientation + " context orientation : " + context.resources.configuration.orientation + " sensor real orientation : " + sensorOrientation)
     val enableHdr = configuration?.photoHdr ?: false
     val isSelfie = cameraDevice?.id?.let { cameraManager.getCameraCharacteristics(it)?.get(CameraCharacteristics.LENS_FACING) } == CameraCharacteristics.LENS_FACING_FRONT
     val captureRequest = captureSession.device.createPhotoCaptureRequest(
@@ -579,8 +588,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       enableRedEyeReduction,
       enableAutoStabilization,
       enableHdr,
-      orientation,
-            isSelfie
+      context
     )
     Log.i(TAG, "Photo capture 1/3 - starting capture...")
     val result = captureSession.capture(captureRequest, enableShutterSound)

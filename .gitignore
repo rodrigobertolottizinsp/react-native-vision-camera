@@ -4,3 +4,6 @@
 ./package-lock.json
 ./yarn.lock
 **/node_modules/
+
+android/build
+android/.cxx

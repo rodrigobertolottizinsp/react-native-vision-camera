@@ -82,17 +82,17 @@ private fun resizeBitmap(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap 
 
   return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, false)
 }
-private fun writePhotoToFile(photo: CameraSession.CapturedPhoto, file: File, cameraCharacteristics: CameraCharacteristics) {
+
+private fun writePhotoToFile(photo: CameraSession.CapturedPhoto, file: File,         cameraCharacteristics: CameraCharacteristics
+, context: Context) {
   val byteBuffer = photo.image.planes[0].buffer
-  if (photo.isMirrored) {
+  if (false) {
     val imageBytes = ByteArray(byteBuffer.remaining()).apply { byteBuffer.get(this) }
     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     val matrix = Matrix()
 
-    val sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!.toFloat()
-    matrix.setRotate(sensorOrientation)
-    matrix.postScale(-1f, 1f, bitmap.getWidth() / 2f, bitmap.getHeight() / 2f);
-  
+    matrix.preScale(-1f, 1f)
+
     val processedBitmap =
       Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, false)
 
@@ -115,7 +115,7 @@ private suspend fun savePhotoToFile(
   when (photo.format) {
     ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
       val file = createCustomFile(filePath, ".jpg")
-      writePhotoToFile(photo, file, cameraCharacteristics)
+      writePhotoToFile(photo, file, cameraCharacteristics, context)
       return@withContext file.absolutePath
     }
     ImageFormat.RAW_SENSOR -> {
