@@ -8,6 +8,7 @@ import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.hardware.camera2.*
 import android.util.Log
+import android.view.WindowManager
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
@@ -84,17 +85,22 @@ private fun resizeBitmap(bitmap: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap 
 }
 
 private fun writePhotoToFile(photo: CameraSession.CapturedPhoto, file: File,         cameraCharacteristics: CameraCharacteristics
-, context: Context) {
+, context: Context, rotation: Int) {
   val byteBuffer = photo.image.planes[0].buffer
   if (false) {
     val imageBytes = ByteArray(byteBuffer.remaining()).apply { byteBuffer.get(this) }
     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     val matrix = Matrix()
-
-    matrix.preScale(-1f, 1f)
-
+    matrix.setScale(-1f, -1f, (bitmap.width / 2).toFloat(), (bitmap.height / 2).toFloat()) // Both horizontal and vertical flip
+    var rotation = rotation
+    var orientation = photo.orientation
+//    if (rotation == 1){
+//      matrix.postRotate(90f)
+//    } else if (rotation == 3){
+//      matrix.postRotate(-90f)
+//    }
     val processedBitmap =
-      Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, false)
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, false)
 
     FileOutputStream(file).use { stream ->
       processedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
@@ -115,7 +121,9 @@ private suspend fun savePhotoToFile(
   when (photo.format) {
     ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
       val file = createCustomFile(filePath, ".jpg")
-      writePhotoToFile(photo, file, cameraCharacteristics, context)
+      val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+      val display = wm.defaultDisplay
+      writePhotoToFile(photo, file, cameraCharacteristics, context, display.rotation)
       return@withContext file.absolutePath
     }
     ImageFormat.RAW_SENSOR -> {

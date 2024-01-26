@@ -29,8 +29,14 @@ private fun supportsSnapshotCapture(cameraCharacteristics: CameraCharacteristics
 }
 
 private fun getJpegOrientation(c: CameraCharacteristics, deviceOrientation: Int): Int {
+  //0 : portrait
+  //1 : landscape left
+  //2 :
+  //3 : landscape right
   var deviceOrientation = deviceOrientation
   if (deviceOrientation == OrientationEventListener.ORIENTATION_UNKNOWN) return 0
+  if (deviceOrientation == 1) return -90
+  if (deviceOrientation == 3) return 180
   val sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
 
   // Round device orientation to a multiple of 90
@@ -74,14 +80,6 @@ fun CameraDevice.createPhotoCaptureRequest(
   }
   captureRequest.set(CaptureRequest.JPEG_QUALITY, jpegQuality.toByte())
 
-//  if (!isSelfie) {
-//    if (orientation != Orientation.LANDSCAPE_RIGHT) {
-//      resultOrientation = orientation.toDegrees() + 180
-//    }
-//  }
-
-//  captureRequest.set(CaptureRequest.JPEG_ORIENTATION, resultOrientation)
-
   // TODO: Use the same options as from the preview request. This is duplicate code!
 
   when (flashMode) {
@@ -120,7 +118,7 @@ fun CameraDevice.createPhotoCaptureRequest(
     }
   }
 
-  // TODO: Check if that zoom value is even supported.  
+  // TODO: Check if that zoom value is even supported.
   captureRequest.setZoom(zoom, cameraCharacteristics)
 
   // Set HDR
@@ -131,15 +129,7 @@ fun CameraDevice.createPhotoCaptureRequest(
 
   val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
   val display = wm.defaultDisplay
-  var rotVal = 0
-  if (display.rotation == 0){
-    rotVal = getJpegOrientation(cameraCharacteristics, display.rotation)
-  } else if (display.rotation == 3){
-    rotVal = 180
-  } else if (display.rotation == 1){
-    rotVal = -90
-  }
-  val newOrientation = getJpegOrientation(cameraCharacteristics, display.rotation)
+  var rotVal = getJpegOrientation(cameraCharacteristics, display.rotation)
 
   captureRequest.set(CaptureRequest.JPEG_ORIENTATION, rotVal)
 

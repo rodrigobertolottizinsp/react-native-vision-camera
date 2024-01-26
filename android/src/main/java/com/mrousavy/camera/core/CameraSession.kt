@@ -127,11 +127,11 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
 
       try {
         // Build up session or update any props
-        if (diff.deviceChanged) {
+        if (diff.deviceChanged || cameraDevice == null) {
           // 1. cameraId changed, open device
           configureCameraDevice(config)
         }
-        if (diff.outputsChanged) {
+        if (diff.outputsChanged || captureSession == null) {
           // 2. outputs changed, build new session
           configureOutputs(config)
         }
@@ -140,9 +140,6 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
           configureCaptureRequest(config)
         }
 
-        if (diff.orientationChanged) {
-          //UPDATE SIZE HERE
-        }
 
         Log.i(TAG, "Successfully updated CameraSession Configuration! isActive: ${config.isActive}")
         this.configuration = config
@@ -230,10 +227,17 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     Log.i(TAG, "Configuring Camera #$cameraId...")
 
     cameraDevice?.close()
+
+    if (!configuration.isActive) {
+      return
+    }
+
     cameraDevice = cameraManager.openCamera(cameraId, { device, error ->
       if (this.cameraDevice == device) {
         Log.e(TAG, "Camera Device $device has been disconnected!", error)
         isRunning = false
+        this.cameraDevice = null
+
         callback.onError(error)
       } else {
         // a previous device has been disconnected, but we already have a new one.
@@ -251,6 +255,12 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
    * Set up the `CaptureSession` with all outputs (preview, photo, video, codeScanner) and their HDR/Format settings.
    */
   private suspend fun configureOutputs(configuration: CameraConfiguration) {
+    captureSession?.close()
+    captureSession = null
+
+    if (!configuration.isActive) {
+      return
+    }
     val cameraDevice = cameraDevice ?: throw NoCameraDeviceError()
     val characteristics = cameraManager.getCameraCharacteristics(cameraDevice.id)
     val format = configuration.format
@@ -258,9 +268,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
     Log.i(TAG, "Configuring Session for Camera #${cameraDevice.id}...")
 
     // TODO: Do we want to skip this is this.cameraSession already contains all outputs?
-    // Destroy previous CaptureSession
-    captureSession?.close()
-    captureSession = null
+
     // Destroy previous outputs
     photoOutput?.close()
     photoOutput = null
@@ -382,6 +390,7 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       if (this.captureSession == session) {
         Log.i(TAG, "Camera Session $session has been closed!")
         isRunning = false
+        this.captureSession = null
       }
     }, CameraQueues.cameraQueue)
 

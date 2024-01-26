@@ -79,20 +79,20 @@ class PreviewView(context: Context, callback: SurfaceHolder.Callback) : SurfaceV
     }
   }
 
+
   @SuppressLint("DrawAllocation")
   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-    val viewWidth = MeasureSpec.getSize(widthMeasureSpec)
-    val viewHeight = MeasureSpec.getSize(heightMeasureSpec)
 
-    Log.i(TAG, "PreviewView onMeasure($viewWidth, $viewHeight)")
+    val viewSize = Size(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec))
+    val fittedSize = getSize(size, viewSize, resizeMode)
 
-    val fittedSize = getSize(size, Size(viewWidth, viewHeight), resizeMode)
-    Log.d(TAG, "Fitted dimensions set: $fittedSize")
-//    setMeasuredDimension(fittedSize.width, fittedSize.height)
+    Log.i(TAG, "PreviewView is $viewSize, rendering $size content. Resizing to: $fittedSize ($resizeMode)")
     if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+      Log.i(TAG, "Setting landscape dimensions: $size")
       setMeasuredDimension(size.width, size.height)
     }else{
+      Log.i(TAG, "Setting portrait dimensions: $fittedSize")
       setMeasuredDimension(fittedSize.width, fittedSize.height)
     }
   }
