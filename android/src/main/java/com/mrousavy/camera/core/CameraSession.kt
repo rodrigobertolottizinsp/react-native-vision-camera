@@ -643,19 +643,19 @@ class CameraSession(private val context: Context, private val cameraManager: Cam
       val videoOutput = videoOutput ?: throw VideoNotEnabledError()
 
       val fps = configuration?.fps ?: 30
-    //ztesting orientation param
-      var orientationVal: Orientation = Orientation.PORTRAIT
 
-      if (orientation == "portrait"){
-        orientationVal = Orientation.PORTRAIT
-      }
-      if (orientation == "landscape-right"){
+      val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+      val display = wm.defaultDisplay
+      val windowOrientation = display.rotation
+      var orientationVal: Orientation = Orientation.PORTRAIT //windowOrientation = 0
+
+      if (windowOrientation == 1){
         orientationVal = Orientation.LANDSCAPE_LEFT
-
       }
-      if (orientation == "landscape-left"){
+      if (windowOrientation == 3){
         orientationVal = Orientation.LANDSCAPE_RIGHT
       }
+
       val recording =
         RecordingSession(context, videoOutput.size, enableAudio, fps, codec, orientationVal, fileType, bitRate, callback, onError, filePath, maxFileSize)
       recording.start()

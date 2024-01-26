@@ -6,10 +6,7 @@ import android.content.res.Configuration
 import android.hardware.camera2.CameraManager
 import android.util.Log
 import android.util.Size
-import android.view.Gravity
-import android.view.MotionEvent
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import android.view.*
 import android.widget.FrameLayout
 import com.mrousavy.camera.extensions.bigger
 import com.mrousavy.camera.extensions.getMaximumPreviewSize
@@ -86,14 +83,15 @@ class PreviewView(context: Context, callback: SurfaceHolder.Callback) : SurfaceV
 
     val viewSize = Size(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec))
     val fittedSize = getSize(size, viewSize, resizeMode)
-
+    val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    val isLandscape = wm.defaultDisplay.rotation != 0
     Log.i(TAG, "PreviewView is $viewSize, rendering $size content. Resizing to: $fittedSize ($resizeMode)")
-    if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    if (isLandscape) {
       Log.i(TAG, "Setting landscape dimensions: $size")
-      setMeasuredDimension(size.width, size.height)
+      setMeasuredDimension(1920, 1080)
     }else{
       Log.i(TAG, "Setting portrait dimensions: $fittedSize")
-      setMeasuredDimension(fittedSize.width, fittedSize.height)
+      setMeasuredDimension(1080, 1920)
     }
   }
 
