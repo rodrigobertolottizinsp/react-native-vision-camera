@@ -58,6 +58,7 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   @objc var zoom: NSNumber = 1.0 // in "factor"
   @objc var exposure: NSNumber = 0.0
   @objc var videoStabilizationMode: NSString?
+  @objc var onZoomChanged: RCTDirectEventBlock?
   @objc var resizeMode: NSString = "cover" {
     didSet {
       updatePreview()

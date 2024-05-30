@@ -63,6 +63,7 @@ RCT_EXPORT_VIEW_PROPERTY(onAverageFpsChanged, RCTDirectEventBlock);
 // Code Scanner
 RCT_EXPORT_VIEW_PROPERTY(codeScannerOptions, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(onCodeScanned, RCTDirectEventBlock);
+RCT_EXPORT_VIEW_PROPERTY(onZoomChanged, RCTDirectEventBlock);
 
 // Camera View Functions
 RCT_EXTERN_METHOD(startRecording

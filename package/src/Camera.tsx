@@ -87,6 +87,8 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     this.onShutter = this.onShutter.bind(this)
     this.onError = this.onError.bind(this)
     this.onCodeScanned = this.onCodeScanned.bind(this)
+    this.onZoomChanged = this.onZoomChanged.bind(this)
+
     this.ref = React.createRef<RefType>()
     this.lastFrameProcessor = undefined
     this.state = {
@@ -525,6 +527,10 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
     codeScanner.onCodeScanned(event.nativeEvent.codes, event.nativeEvent.frame)
   }
 
+  private onZoomChanged(event: NativeSyntheticEvent<number>): void {
+    this.props.onZoomChanged?.(event.nativeEvent.zoomFactor)
+  }
+
   //#region Lifecycle
   private setFrameProcessor(frameProcessor: (frame: Frame) => void): void {
     VisionCameraProxy.setFrameProcessor(this.handle, frameProcessor)
@@ -599,6 +605,7 @@ export class Camera extends React.PureComponent<CameraProps, CameraState> {
         onAverageFpsChanged={enableFpsGraph ? this.onAverageFpsChanged : undefined}
         onInitialized={this.onInitialized}
         onCodeScanned={this.onCodeScanned}
+        onZoomChanged={this.onZoomChanged}
         onStarted={this.onStarted}
         onStopped={this.onStopped}
         onShutter={this.onShutter}

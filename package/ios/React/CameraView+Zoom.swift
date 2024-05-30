@@ -13,6 +13,9 @@ extension CameraView {
   @objc
   final func onPinch(_ gesture: UIPinchGestureRecognizer) {
     let scale = max(min(gesture.scale * pinchScaleOffset, cameraSession.maxZoom), CGFloat(1.0))
+      onZoomChanged?([
+          "zoomFactor": scale
+      ])
     if gesture.state == .ended {
       pinchScaleOffset = scale
       return

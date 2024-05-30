@@ -162,6 +162,7 @@ export function CameraPage({ navigation }: Props): React.ReactElement {
       const startZoom = context.startZoom ?? 0
       const scale = interpolate(event.scale, [1 - 1 / SCALE_FULL_ZOOM, 1, SCALE_FULL_ZOOM], [-1, 0, 1], Extrapolate.CLAMP)
       zoom.value = interpolate(scale, [-1, 0, 1], [minZoom, startZoom, maxZoom], Extrapolate.CLAMP)
+      console.log[('ZOOM: ', zoom.value)]
     },
   })
   //#endregion
@@ -213,7 +214,7 @@ export function CameraPage({ navigation }: Props): React.ReactElement {
                 videoHdr={videoHdr}
                 photoQualityBalance="quality"
                 lowLightBoost={device.supportsLowLightBoost && enableNightMode}
-                enableZoomGesture={false}
+                enableZoomGesture={true}
                 animatedProps={cameraAnimatedProps}
                 exposure={0}
                 enableFpsGraph={true}
@@ -223,6 +224,7 @@ export function CameraPage({ navigation }: Props): React.ReactElement {
                 audio={microphone.hasPermission}
                 enableLocation={location.hasPermission}
                 frameProcessor={frameProcessor}
+                onZoomChanged={(value) => console.log('new zoom value: ', value)}
               />
             </TapGestureHandler>
           </Reanimated.View>

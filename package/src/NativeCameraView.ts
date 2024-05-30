@@ -18,7 +18,7 @@ export interface AverageFpsChangedEvent {
 }
 export type NativeCameraViewProps = Omit<
   CameraProps,
-  'device' | 'onInitialized' | 'onError' | 'onShutter' | 'frameProcessor' | 'codeScanner'
+  'device' | 'onInitialized' | 'onError' | 'onShutter' | 'frameProcessor' | 'onZoomChanged' | 'codeScanner'
 > & {
   // private intermediate props
   cameraId: string
