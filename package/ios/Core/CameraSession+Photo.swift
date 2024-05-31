@@ -80,12 +80,16 @@ extension CameraSession {
 
       // shutter sound
       let enableShutterSound = options["enableShutterSound"] as? Bool ?? true
+      let targetWidth = options["targetWidth"] as? Int ?? 0
+      let filePath = options["filePath"] as? String ?? ""
+      let aspectRatio = options["aspectRatio"] as? Double ?? 4/3
 
       // Actually do the capture!
       let photoCaptureDelegate = PhotoCaptureDelegate(promise: promise,
                                                       enableShutterSound: enableShutterSound,
                                                       metadataProvider: self.metadataProvider,
-                                                      cameraSessionDelegate: self.delegate)
+                                                      cameraSessionDelegate: self.delegate,
+                                                      targetWidth: targetWidth, filePath: filePath, aspectRatio: aspectRatio)
       photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureDelegate)
 
       // Assume that `takePhoto` is always called with the same parameters, so prepare the next call too.

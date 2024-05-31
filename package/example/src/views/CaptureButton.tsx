@@ -17,6 +17,7 @@ import Reanimated, {
 } from 'react-native-reanimated'
 import type { Camera, PhotoFile, VideoFile } from 'react-native-vision-camera'
 import { CAPTURE_BUTTON_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH } from './../Constants'
+import RNFS from 'react-native-fs'
 
 const PAN_GESTURE_HANDLER_FAIL_X = [-SCREEN_WIDTH, SCREEN_WIDTH]
 const PAN_GESTURE_HANDLER_ACTIVE_Y = [-2, 2]
@@ -56,17 +57,35 @@ const _CaptureButton: React.FC<Props> = ({
   const recordingProgress = useSharedValue(0)
   const isPressingButton = useSharedValue(false)
 
+  const createTempFilePath = async (fileName, data) => {
+    try {
+      // Define the path for the temporary file
+      const tempDir = RNFS.TemporaryDirectoryPath
+      const filePath = `${tempDir}/${new Date().getTime().toString()}.jpg`
+
+      // Write data to the file
+      return filePath
+    } catch (error) {
+      console.error('Error writing file:', error)
+      throw error
+    }
+  }
+
   //#region Camera Capture
   const takePhoto = useCallback(async () => {
     try {
       if (camera.current == null) throw new Error('Camera ref is null!')
-
+      const path = await createTempFilePath()
       console.log('Taking photo...')
+      console.log('File path: ', path)
       const photo = await camera.current.takePhoto({
         flash: flash,
         enableShutterSound: false,
+        filePath: path,
+        targetWidth: 1080,
+        aspectRatio: 4 / 3,
       })
-      onMediaCaptured(photo, 'photo')
+      onMediaCaptured(photo, 'photo', 'file://' + path)
     } catch (e) {
       console.error('Failed to take photo!', e)
     }

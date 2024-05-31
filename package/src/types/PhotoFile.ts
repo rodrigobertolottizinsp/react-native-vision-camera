@@ -29,6 +29,9 @@ export interface TakePhotoOptions {
    * @default true
    */
   enableShutterSound?: boolean
+  targetWidth: String
+  filePath: String
+  aspectRatio?: Double
 }
 
 /**
