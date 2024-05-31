@@ -45,6 +45,7 @@ class RecordingSession {
 
   // If we are waiting for late frames and none actually arrive, we force stop the session after the given timeout.
   private let automaticallyStopTimeoutSeconds = 4.0
+  private var maxFileSize = 0
 
   /**
    Gets the file URL of the recorded video.
@@ -80,11 +81,11 @@ class RecordingSession {
        fileType: AVFileType,
        metadataProvider: MetadataProvider,
        orientation: Orientation,
-       completion: @escaping (RecordingSession, AVAssetWriter.Status, Error?) -> Void) throws {
+       completion: @escaping (RecordingSession, AVAssetWriter.Status, Error?) -> Void, maxFileSize: Int) throws {
     completionHandler = completion
     videoOrientation = orientation
-    VisionLogger.log(level: .info, message: "Creating RecordingSession... (orientation: \(orientation))")
 
+    self.maxFileSize = maxFileSize
     do {
       assetWriter = try AVAssetWriter(outputURL: url, fileType: fileType)
       assetWriter.shouldOptimizeForNetworkUse = false
@@ -258,6 +259,14 @@ class RecordingSession {
       VisionLogger.log(level: .warning, message: "\(bufferType) AssetWriter is not ready for more data, dropping this Frame...")
       return
     }
+    if let fileSize = fileSize(url: url) {
+      if fileSize > self.maxFileSize {
+                      print("File size limit exceeded. Stopping writing.")
+                      finish(maxSizeReached: true)
+                      return
+      }
+    }
+
     writer.append(buffer)
     lastWrittenTimestamp = timestamp
 
@@ -294,7 +303,7 @@ class RecordingSession {
   /**
    Stops the AssetWriters and calls the completion callback.
    */
-  private func finish() {
+  private func finish(maxSizeReached:Bool = false) {
     lock.wait()
     defer {
       lock.signal()
@@ -317,5 +326,17 @@ class RecordingSession {
     assetWriter.finishWriting {
       self.completionHandler(self, self.assetWriter.status, self.assetWriter.error)
     }
+  }
+
+  private func fileSize(url: URL) -> Int64? {
+      do {
+          let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+          if let fileSize = fileAttributes[.size] as? NSNumber {
+              return fileSize.int64Value
+          }
+      } catch {
+          print("Error getting file size: \(error)")
+      }
+      return nil
   }
 }

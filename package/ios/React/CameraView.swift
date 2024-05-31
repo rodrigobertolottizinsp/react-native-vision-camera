@@ -51,6 +51,11 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   @objc var photoQualityBalance: NSString?
   @objc var lowLightBoost = false
   @objc var outputOrientation: NSString?
+  @objc var orientation: NSString?
+  @objc var videoMode = false
+  @objc var maxFileSize = 2000000
+
+  var lastOrientation:UIInterfaceOrientation
 
   // other props
   @objc var isActive = false
@@ -260,6 +265,9 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
 
       // isActive
       config.isActive = isActive
+
+      config.videoMode = videoMode
+      config.maxFileSize = maxFileSize
     }
 
     // Store `zoom` offset for native pinch-gesture

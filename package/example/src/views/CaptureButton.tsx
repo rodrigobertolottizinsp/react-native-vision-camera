@@ -57,11 +57,11 @@ const _CaptureButton: React.FC<Props> = ({
   const recordingProgress = useSharedValue(0)
   const isPressingButton = useSharedValue(false)
 
-  const createTempFilePath = async (fileName, data) => {
+  const createTempFilePath = async (video) => {
     try {
       // Define the path for the temporary file
       const tempDir = RNFS.TemporaryDirectoryPath
-      const filePath = `${tempDir}/${new Date().getTime().toString()}.jpg`
+      const filePath = `${tempDir}/${new Date().getTime().toString()}.${video ? 'mp4' : 'jpgd'}`
 
       // Write data to the file
       return filePath
@@ -75,7 +75,7 @@ const _CaptureButton: React.FC<Props> = ({
   const takePhoto = useCallback(async () => {
     try {
       if (camera.current == null) throw new Error('Camera ref is null!')
-      const path = await createTempFilePath()
+      const path = await createTempFilePath(false)
       console.log('Taking photo...')
       console.log('File path: ', path)
       const photo = await camera.current.takePhoto({
@@ -107,20 +107,22 @@ const _CaptureButton: React.FC<Props> = ({
       console.error('failed to stop recording!', e)
     }
   }, [camera])
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     try {
       if (camera.current == null) throw new Error('Camera ref is null!')
-
+      const path = await createTempFilePath(true)
       console.log('calling startRecording()...')
       camera.current.startRecording({
         flash: flash,
+        filePath: path,
+        maxFileSize: 20 * 1024 * 1024,
         onRecordingError: (error) => {
           console.error('Recording failed!', error)
           onStoppedRecording()
         },
         onRecordingFinished: (video) => {
           console.log(`Recording successfully finished! ${video.path}`)
-          onMediaCaptured(video, 'video')
+          onMediaCaptured(video, 'video', 'file://' + path)
           onStoppedRecording()
         },
       })

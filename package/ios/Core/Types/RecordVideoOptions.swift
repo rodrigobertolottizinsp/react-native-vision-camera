@@ -13,6 +13,9 @@ struct RecordVideoOptions {
   var fileType: AVFileType = .mov
   var flash: Torch = .off
   var codec: AVVideoCodecType?
+  var maxFileSize: Int = 0
+  var filePath: String = ""
+
   /**
    * Full Bit-Rate override for the Video Encoder, in Megabits per second (Mbps)
    */
@@ -43,6 +46,13 @@ struct RecordVideoOptions {
     // BitRate Multiplier
     if let parsed = dictionary["videoBitRateMultiplier"] as? Double {
       bitRateMultiplier = parsed
+    }
+    if let parsed = dictionary["maxFileSize"] as? Int {
+        maxFileSize = parsed
+    }
+    //Filepath
+    if let parsed = dictionary["filePath"] as? String {
+        filePath = parsed
     }
   }
 }

@@ -47,6 +47,7 @@ class CameraConfiguration {
 
   // isActive (Start/Stop)
   var isActive = false
+  var maxFileSize = 0
 
   // Audio Session
   var audio: OutputConfiguration<Audio> = .disabled
@@ -69,6 +70,8 @@ class CameraConfiguration {
       exposure = other.exposure
       isActive = other.isActive
       audio = other.audio
+      videoMode = other.videoMode
+      maxFileSize = other.maxFileSize
     } else {
       // self will just be initialized with the default values.
     }
