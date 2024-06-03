@@ -27,11 +27,12 @@ fun CameraView.startRecording(options: RecordVideoOptions, onRecordCallback: Cal
     map.putInt("height", video.size.height)
     onRecordCallback(map, null)
   }
+
   val onError = { error: CameraError ->
     val errorMap = makeErrorMap(error.code, error.message)
     onRecordCallback(null, errorMap)
   }
-  cameraSession.startRecording(audio, options, callback, onError)
+  cameraSession.startRecording(audio, options, callback, onError, options.filePath)
 }
 
 fun CameraView.pauseRecording() {

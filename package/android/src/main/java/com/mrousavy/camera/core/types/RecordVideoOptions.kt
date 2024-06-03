@@ -7,7 +7,7 @@ class RecordVideoOptions(map: ReadableMap) {
   var videoCodec = VideoCodec.H264
   var videoBitRateOverride: Double? = null
   var videoBitRateMultiplier: Double? = null
-
+  var filePath: String = map.getString("filePath").toString()
   init {
     if (map.hasKey("fileType")) {
       fileType = VideoFileType.fromUnionValue(map.getString("fileType"))

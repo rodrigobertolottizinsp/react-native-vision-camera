@@ -563,13 +563,15 @@ class CameraSession(private val context: Context, private val callback: Callback
     enableAudio: Boolean,
     options: RecordVideoOptions,
     callback: (video: Video) -> Unit,
-    onError: (error: CameraError) -> Unit
+    onError: (error: CameraError) -> Unit,
+    filePath: String
   ) {
     if (camera == null) throw CameraNotReadyError()
     if (recording != null) throw RecordingInProgressError()
     val videoOutput = videoOutput ?: throw VideoNotEnabledError()
 
-    val file = FileUtils.createTempFile(context, options.fileType.toExtension())
+    val file = FileUtils.createFile(context, filePath)
+
     val outputOptions = FileOutputOptions.Builder(file).also { outputOptions ->
       metadataProvider.location?.let { location ->
         Log.i(TAG, "Setting Video Location to ${location.latitude}, ${location.longitude}...")
