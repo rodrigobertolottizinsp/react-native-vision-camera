@@ -69,6 +69,8 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
       updatePreview()
     }
   }
+  
+  var tapGestureRecognizer: UITapGestureRecognizer?
 
   // events
   @objc var onInitialized: RCTDirectEventBlock?
@@ -111,7 +113,9 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
   override public init(frame: CGRect) {
     super.init(frame: frame)
     cameraSession.delegate = self
+    addTapGestureRecognizer()
     fpsSampleCollector.delegate = self
+    NotificationCenter.default.addObserver(self, selector: #selector(orientationChanged), name: UIDevice.orientationDidChangeNotification, object: nil)
     updatePreview()
   }
 
@@ -381,6 +385,59 @@ public final class CameraView: UIView, CameraSessionDelegate, FpsSampleCollector
       "frame": scannerFrame.toJSValue(),
     ])
   }
+
+      //ztesting focus
+    @objc final func onTap(_ gesture: UITapGestureRecognizer) {
+        let tapLocation = gesture.location(in: self.previewView)
+        do {
+            let normalized = self.previewView?.captureDevicePointConverted(fromLayerPoint: tapLocation) ?? CGPoint(x: 0.5, y: 0.5)
+            try cameraSession.focus(point: normalized)
+
+            showFocusIndicator(at: tapLocation)
+
+        } catch {
+            // Handle the error appropriately
+            print("Error focusing camera: \(error)")
+        }
+        // Handle tap gesture logic here
+    }
+
+  func showFocusIndicator(at point: CGPoint) {
+          // Remove any existing focus indicator
+          // Create a new focus indicator view
+          let focusIndicatorSize: CGFloat = 60.0
+          let focusIndicatorFrame = CGRect(x: point.x - focusIndicatorSize/2, y: point.y - focusIndicatorSize/2, width: focusIndicatorSize, height: focusIndicatorSize)
+          let newFocusIndicatorView = UIView(frame: focusIndicatorFrame)
+          newFocusIndicatorView.layer.borderColor = UIColor(red: 242/255, green: 166/255, blue: 27/255, alpha: 0.5).cgColor
+          newFocusIndicatorView.layer.borderWidth = 3.0
+          newFocusIndicatorView.layer.cornerRadius = 7.5
+
+          // Add the focus indicator to the camera view
+          self.previewView?.addSubview(newFocusIndicatorView)
+
+          // Animate the focus indicator
+          UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
+              newFocusIndicatorView.alpha = 0.0
+          }) { _ in
+              newFocusIndicatorView.removeFromSuperview()
+          }
+
+          // Save the reference to the new focus indicator view
+      }
+      
+      func addTapGestureRecognizer() {
+          removeTapGestureRecognizer()
+          tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(onTap(_:)))
+          
+          addGestureRecognizer(tapGestureRecognizer!)
+      }
+
+      func removeTapGestureRecognizer() {
+          if let tapGestureRecognizer = tapGestureRecognizer {
+              removeGestureRecognizer(tapGestureRecognizer)
+              self.tapGestureRecognizer = nil
+          }
+      }
 
   func onAverageFpsChanged(averageFps: Double) {
     guard let onAverageFpsChanged else {
