@@ -61,7 +61,7 @@ const _CaptureButton: React.FC<Props> = ({
     try {
       // Define the path for the temporary file
       const tempDir = RNFS.TemporaryDirectoryPath
-      const filePath = `${tempDir}/${new Date().getTime().toString()}.${video ? 'mp4' : 'jpgd'}`
+      const filePath = `${tempDir}/${new Date().getTime().toString()}.${video ? 'mp4' : 'jpg'}`
 
       // Write data to the file
       return filePath

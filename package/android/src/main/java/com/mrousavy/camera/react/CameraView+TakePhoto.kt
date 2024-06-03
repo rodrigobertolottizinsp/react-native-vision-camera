@@ -16,10 +16,13 @@ suspend fun CameraView.takePhoto(optionsMap: ReadableMap): WritableMap {
 
   val flash = options["flash"] as? String ?: "off"
   val enableShutterSound = options["enableShutterSound"] as? Boolean ?: true
+  val filePath = options["filePath"] as? String ?: ""
 
   val photo = cameraSession.takePhoto(
     Flash.fromUnionValue(flash),
-    enableShutterSound
+    enableShutterSound,
+    orientation,
+    filePath
   )
 
   Log.i(TAG, "Successfully captured ${photo.width} x ${photo.height} photo!")

@@ -6,6 +6,7 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.Event
+import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.mrousavy.camera.core.CameraError
 import com.mrousavy.camera.core.CodeScannerFrame
@@ -73,6 +74,13 @@ fun CameraView.invokeOnViewReady() {
   val surfaceId = UIManagerHelper.getSurfaceId(this)
   val event = CameraViewReadyEvent(surfaceId, id)
   this.sendEvent(event)
+}
+
+fun CameraView.invokeOnZoomChanged(zoom: Double) {
+  val event = Arguments.createMap()
+  event.putDouble("zoomFactor", zoom)
+  val reactContext = context as ReactContext
+  reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "zoomChanged", event)
 }
 
 fun CameraView.invokeOnAverageFpsChanged(averageFps: Double) {

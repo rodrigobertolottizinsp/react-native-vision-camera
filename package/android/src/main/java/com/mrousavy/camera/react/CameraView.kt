@@ -237,17 +237,11 @@ class CameraView(context: Context) :
         context,
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
           override fun onScale(detector: ScaleGestureDetector): Boolean {
-            var maxZoom = format!!.getInt("maxZoom")
-            var newZoom = zoom * detector.scaleFactor
-            if (newZoom <= maxZoom) {
-              zoom = newZoom
-              onZoomChanged(zoom.toDouble())
-              update()
-              return true
-            } else {
-              onZoomChanged(maxZoom.toDouble())
-              return false
-            }
+            zoom *= detector.scaleFactor
+            update()
+            onZoomChanged(zoom.toDouble())
+            
+            return true
           }
         }
       )
@@ -330,11 +324,11 @@ class CameraView(context: Context) :
     invokeOnCodeScanned(codes, scannerFrame)
   }
 
-  override fun onZoomChanged(zoom: Double){
-    invokeOnZoomChanged(zoom)
-  }
-
   override fun onAverageFpsChanged(averageFps: Double) {
     invokeOnAverageFpsChanged(averageFps)
+  }
+
+  override fun onZoomChanged(zoom: Double){
+    invokeOnZoomChanged(zoom)
   }
 }
